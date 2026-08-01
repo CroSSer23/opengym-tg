@@ -11,7 +11,7 @@ import { starterRoutines } from './lib/starter.js'
 import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
-import { Button, Slider, Switch, Segmented, SelectRow } from './components/ui.jsx'
+import { Button, Slider, Switch, Segmented, SelectRow, TextArea } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import BodyMap from './components/BodyMap.jsx'
 import { loadOfWorkouts } from './lib/muscles.js'
@@ -850,8 +850,39 @@ function WorkoutComplete({ close }) {
 }
 export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center' })
 
+// How the session felt, in one tap (F9). Optional forever — the Coach reads it when it is
+// there and never asks twice. Stored on the finished workout itself, so a rating stays tied
+// to the session it describes rather than living in a log nothing else can see.
+function SessionRating({ w }) {
+  const update = useStore(s => s.update)
+  const [rating, setRating] = useState(w.rating || null)
+  const [note, setNote] = useState('')
+  const onWorkout = (s, fn) => { const rec = (s.workouts || []).find(x => x.id === w.id); if (rec) fn(rec) }
+  const pick = v => {
+    const next = v === rating ? null : v
+    setRating(next)
+    update(s => onWorkout(s, rec => { if (next) rec.rating = next; else delete rec.rating }))
+  }
+  const saveNote = () => update(s => onWorkout(s, rec => {
+    const v = note.trim()
+    if (v) rec.note = v.slice(0, 300); else delete rec.note
+  }))
+  return <div style={{ textAlign: 'left', marginTop: 16 }}>
+    <h4 className="sec">{t('How did that feel?')}</h4>
+    <Segmented
+      options={[{ value: 'easy', label: t('Too easy') }, { value: 'right', label: t('About right') }, { value: 'hard', label: t('Brutal') }]}
+      value={rating} onChange={pick} />
+    {!!rating && <>
+      <div style={{ height: 8 }} />
+      <TextArea rows={2} maxLength={300} value={note} onChange={e => setNote(e.target.value)} onBlur={saveNote}
+        placeholder={t('Anything worth remembering? (optional)')} />
+    </>}
+  </div>
+}
+
 function FinishSummary({ w, prs, e1prs = [], close }) {
   const st = useStore(s => s.S)
+  const coachOn = !!useStore(s => s.config)?.coach?.enabled && !!st.coach?.consent?.agreedAt
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
     <h3 style={{ margin: '8px 0' }}>{t('Workout complete!')}</h3>
@@ -867,6 +898,7 @@ function FinishSummary({ w, prs, e1prs = [], close }) {
     </div>}
     <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>
     <BodyMap load={loadOfWorkouts([w])} body={st.body} />
+    {coachOn && <SessionRating w={w} />}
     <div style={{ height: 14 }} />
     <Button variant="primary" onClick={() => { close(); nav('/home') }}>{t('Nice!')}</Button>
   </div>

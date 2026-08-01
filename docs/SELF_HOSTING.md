@@ -155,6 +155,74 @@ docker compose up -d --build
 The app shell is versioned (`?v=N`) so clients pick up changes on next load. Your `./data` and the
 downloaded media are untouched.
 
+## 8. The AI Coach (optional)
+
+The Coach is an AI that designs training plans and reviews them against what your users
+actually log. It is **off on a fresh instance**, and turning it on is entirely a dashboard job
+— there is nothing to install and nothing to put in `.env`.
+
+### What you are signing up for
+
+The provider CLI is built into the api image, but the *account* is yours: every plan or review
+is one session billed to whatever you connect. So budget for it, and use the caps below.
+
+### Turning it on
+
+1. Open **Settings → Admin dashboard → AI Coach** and flip the switch.
+2. Pick a provider. Claude Code is the one the image ships with; the others are there for
+   instances that install their own CLI into a derived image.
+3. Click **Connect**. That opens the provider's sign-in in a new tab — use the account that
+   should pay for this. After you approve, the provider shows a one-time code; paste it back
+   into the dialog. (It is one paste rather than a redirect because a self-hosted domain can't
+   be a registered OAuth redirect target.)
+   Prefer an API key? **Use an API key** takes one instead, stored the same way.
+4. Hit **Test the Coach**. Green means a real round-trip to the model worked.
+
+The card then shows CLI version, sign-in state, jobs run today and the last failure, if any.
+
+### Limits
+
+Set a per-user daily cap (default 10) and, on a shared instance, an instance-wide one. Both
+are in the same card; `0` means no limit. Nothing else meters spend, so these are worth
+setting before you hand the instance to a family.
+
+### What your users see
+
+Nothing, until they opt in. Each profile gets a **Meet the Coach** card explaining exactly
+which categories of their data would leave the server, naming the provider, and stating that
+it runs under your account. Declining leaves the app exactly as it was.
+
+You cannot read their intake answers, their payloads or their proposals — the admin card shows
+counts, timings and error classes only. That is deliberate: enabling a feature and reading
+people's training notes are different powers.
+
+### What leaves the box
+
+Only the profile that asked, and only: their plan, the training window under review, their
+weigh-ins and goal weight, their intake answers, and their unit/language/effort scale. Names,
+passkeys, push subscriptions and every other profile's data stay here. The job itself runs as
+an unprivileged user that cannot read `./data` at all — the CLI sees its own payload and
+nothing else.
+
+### Trying it without an account
+
+Select the **Fixture (testing)** provider. It answers with a canned but structurally real
+proposal, so you can walk the whole loop — intake, proposal, accept, revert — before
+connecting anything that costs money.
+
+### When it breaks
+
+| Symptom | Fix |
+|---|---|
+| "The Coach couldn't sign in to its provider" | The token expired or was revoked. Reconnect in the admin card. |
+| "The Coach isn't installed properly" | The CLI is missing from the image — you are running a custom build. Rebuild `api/`. |
+| "The Coach is resting" | A daily cap was hit. Raise it, or wait. |
+| "answered with something the app couldn't use" | The model produced output that failed validation twice. Usually transient; try again. |
+| Everything is grey and says force-disabled | `COACH_DISABLED=1` is set in the environment. |
+
+Users never see the provider's own error text — that goes to the admin card, where someone can
+act on it.
+
 ## Troubleshooting
 
 | Symptom | Fix |

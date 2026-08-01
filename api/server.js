@@ -9,6 +9,10 @@ import {
   generateAuthenticationOptions, verifyAuthenticationResponse
 } from '@simplewebauthn/server';
 import webpush from 'web-push';
+import * as coachConfig from './coach/config.js';
+import * as coachJobs from './coach/jobs.js';
+import { coachRoutes } from './coach/routes.js';
+import { startCadence } from './coach/cadence.js';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
@@ -29,6 +33,11 @@ const MAX_BODY = 5 * 1024 * 1024;
 const SECURE = /^https:/i.test(ORIGIN) ? ' Secure;' : '';
 
 fs.mkdirSync(DATA, { recursive: true });
+// 0700 is what stops the unprivileged user that Coach jobs run as from reading any of this —
+// state files, db.json, the session secret, the provider credential. The CLI gets its job
+// payload in a temp directory and nothing else. Best-effort: a bind-mounted host directory
+// may refuse the chmod, and that is not a reason to refuse to boot.
+try { fs.chmodSync(DATA, 0o700); } catch { /* host filesystem says no — carry on */ }
 
 /* ---------- secret + db ---------- */
 const secretFile = path.join(DATA, 'secret');
@@ -116,7 +125,10 @@ function userNow(tz) {
       year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
     }).formatToParts(new Date());
     const g = t => parts.find(p => p.type === t)?.value;
-    return { date: `${g('year')}-${g('month')}-${g('day')}`, hhmm: `${g('hour')}:${g('minute')}` };
+    const date = `${g('year')}-${g('month')}-${g('day')}`;
+    // Weekday is derived from the zone's own date, not the server's — a Sunday-evening review
+    // has to be Sunday where the user is, which is what the reminder already assumes for time.
+    return { date, hhmm: `${g('hour')}:${g('minute')}`, weekday: new Date(date + 'T12:00:00Z').getUTCDay() };
   } catch { return null; } // unknown/invalid tz string — skip this user rather than guess
 }
 setInterval(() => {
@@ -255,8 +267,14 @@ setInterval(() => { for (const [k, v] of presence) if (Date.now() - v.updatedAt 
 const routes = {
   'GET /api/health': async (req, res) => json(res, 200, { ok: true, users: db.users.length }),
 
-  // Public config the login screen needs before anyone is signed in.
-  'GET /api/config': async (req, res) => json(res, 200, { invite_only: INVITE_ONLY }),
+  // Public config the login screen needs before anyone is signed in. `coach` is absent unless
+  // the instance has both switched the Coach on and successfully connected a provider — the
+  // single flag every piece of Coach UI hangs off, so an unconfigured instance is byte-for-byte
+  // the app it was before the feature existed.
+  'GET /api/config': async (req, res) => {
+    const coach = coachConfig.publicConfig();
+    json(res, 200, { invite_only: INVITE_ONLY, ...(coach ? { coach } : {}) });
+  },
 
   'GET /api/me': async (req, res) => {
     const user = readSession(req);
@@ -538,8 +556,31 @@ const routes = {
     db.invites = db.invites.filter(i => i.code !== inv.code);
     saveDb();
     json(res, 200, { ok: true });
-  }
+  },
+
+  /* ---------- AI Coach ---------- */
+  // Routes live in coach/routes.js and are handed the helpers above rather than importing
+  // them: they are closures over db and SECRET, and passing them in keeps that module free of
+  // a cycle. Every one of them is inert while the feature is unconfigured.
+  ...coachRoutes({ json, readBody, readSession, requireAdmin })
 };
+
+/* ---------- Coach: boot recovery, notifications, scheduled reviews ---------- */
+// A job that was running when the process died is not coming back; say so rather than leaving
+// a spinner that never resolves.
+coachJobs.recoverOnBoot();
+// A ready proposal is the one Coach event worth a notification. Failures and "nothing to
+// change" stay silent on purpose (FR-38/E4).
+coachJobs.setProposalHook((uid, pending) => {
+  const n = (pending?.changes || []).length;
+  if (!n) return;
+  sendPush(uid, {
+    title: 'Your Coach has been reading',
+    body: n === 1 ? '1 suggestion after this week' : `${n} suggestions after this week`,
+    tag: 'coach-proposal', url: '#/coach'
+  });
+});
+startCadence({ users: () => db.users, userNow });
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');

@@ -15,7 +15,11 @@ export const DEF = {
   // that a profile which never chose (loaded state is overlaid on DEF, on every path: local,
   // server pull, backup import) still falls back to the `showRir` boolean this replaced and
   // keeps the column it had. See effortOf.
-  reminder: { on: false, time: '08:00', tz: null }, effort: null
+  reminder: { on: false, time: '08:00', tz: null }, effort: null,
+  // AI Coach (issue: AI enablement). null until the profile opts in — a null namespace is the
+  // same app it was before the feature existed, which is what Epic F asks for. Shape and
+  // bounds live in lib/coach.js.
+  coach: null
 }
 const clone = o => JSON.parse(JSON.stringify(o))
 
@@ -83,6 +87,10 @@ export const useStore = create((set, get) => {
     S: (() => { const s = loadState(); registerCustom(s.customEx); return s })(),
     user: (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })(),
     ready: false,
+    // Instance capabilities from GET /api/config. `config.coach` is present only when the
+    // owner has both enabled the Coach and connected a provider — every Coach entry point in
+    // the app hangs off it, so an unconfigured instance renders exactly what it always did.
+    config: null,
 
     // Mutate a draft of S via producer fn, then persist + schedule sync.
     update(mut, push = true) {
@@ -172,6 +180,8 @@ export const useStore = create((set, get) => {
         set({ ready: true })
         return
       }
+      // Instance capabilities are public and needed whether or not anyone is signed in.
+      try { set({ config: await api('/api/config') }) } catch (e) { /* offline — assume nothing extra */ }
       try {
         const me = await api('/api/me')
         get().setUser(me.user)

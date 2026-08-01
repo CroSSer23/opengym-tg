@@ -12,6 +12,19 @@ with the AGPL, provided the corresponding source code remains available under th
 the project repository. This permission applies to the distribution channel only and does
 not otherwise limit the license.
 
+## Bundled AI provider CLI
+
+The api image installs the [**Claude Code CLI**](https://github.com/anthropics/claude-code)
+(`@anthropic-ai/claude-code`, pinned in `api/Dockerfile`) so the optional AI Coach works
+without the instance owner installing anything. openGym invokes it as a separate process at
+runtime and does not link against it or include its source; this is mere aggregation, and
+openGym's own AGPL v3.0 licensing is unchanged.
+
+The CLI is distributed under its own terms, and using it requires an account with the
+provider. Both are matters between the instance owner and Anthropic — openGym ships no
+credentials and asks its users for none. Instances that would rather not carry it can leave
+the Coach disabled (the default) or set `COACH_DISABLED=1`.
+
 ## Body diagram geometry
 
 The muscle outlines the body maps are drawn from (`frontend/src/lib/body-paths.js`) are derived
