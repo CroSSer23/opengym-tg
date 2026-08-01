@@ -29,11 +29,7 @@ export const COACH_DISABLED = /^(1|true|yes|on)$/i.test(process.env.COACH_DISABL
 // an adapter file plus a row here — nothing else in the codebase branches on provider identity.
 export const PROVIDERS = {
   claude: { label: 'Claude Code', runtime: 'Claude Agent SDK', setupToken: true, apiKeyEnv: 'ANTHROPIC_API_KEY', oauthEnv: 'CLAUDE_CODE_OAUTH_TOKEN' },
-  gemini: { label: 'Gemini CLI', runtime: 'Gemini CLI', apiKeyEnv: 'GEMINI_API_KEY', oauthEnv: null },
   codex: { label: 'OpenAI Codex CLI', runtime: 'OpenAI Codex CLI', deviceLogin: true, apiKeyEnv: null, oauthEnv: null },
-  // Owner-supplied command honouring the same contract (FR-03): prompt file path as argv[1],
-  // JSON on stdout. `scripts/coach-fixture-cli.mjs` is the reference implementation.
-  custom: { label: 'Custom command', runtime: 'Custom command', apiKeyEnv: null, oauthEnv: null },
   // Test-only: drives the in-repo fixture CLI. Selectable so an instance can be exercised
   // end-to-end (and demoed) without any AI account at all.
   fixture: { label: 'Fixture (testing)', runtime: 'Fixture', apiKeyEnv: null, oauthEnv: null }
@@ -43,7 +39,6 @@ const DEFAULTS = {
   enabled: false,
   provider: 'claude',
   model: null,
-  customCommand: null,
   auth: null,                                    // { type:'cli-token'|'oauth'|'apikey', data:<encrypted> }
   caps: { perProfileDaily: 10, instanceDaily: 0 },   // 0 = unlimited
   log: []
@@ -87,7 +82,14 @@ export function load() {
   if (cache) return cache;
   let stored = {};
   try { stored = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch { /* absent = feature off */ }
-  cache = { ...DEFAULTS, ...stored, caps: { ...DEFAULTS.caps, ...(stored.caps || {}) } };
+  const { customCommand: _customCommand, ...storedWithoutCustomCommand } = stored;
+  cache = { ...DEFAULTS, ...storedWithoutCustomCommand, caps: { ...DEFAULTS.caps, ...(stored.caps || {}) } };
+  // A retired provider must not leave the admin page in a state where no chip is selected, or
+  // continue using its old credential. The next normal save also removes its legacy fields.
+  if (!PROVIDERS[cache.provider]) {
+    cache.provider = DEFAULTS.provider;
+    cache.auth = null;
+  }
   return cache;
 }
 export function save(patch) {
@@ -144,11 +146,11 @@ export function isEnabled() {
   const cfg = load();
   return !!cfg.enabled && !!PROVIDERS[cfg.provider];
 }
-/** Credentials present? `custom` and `fixture` carry their own auth (or need none). */
+/** Credentials present? The fixture carries its own auth (or needs none). */
 export function isConnected() {
   const cfg = load();
   if (!isEnabled()) return false;
-  if (cfg.provider === 'fixture' || cfg.provider === 'custom') return true;
+  if (cfg.provider === 'fixture') return true;
   // Codex's ChatGPT credential remains in Codex's own auth.json cache, not coach.json.
   if (cfg.provider === 'codex') return hasCodexAuth();
   // Claude is intentionally setup-token only. Do not silently retain the old browser OAuth or

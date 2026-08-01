@@ -18,23 +18,6 @@ const CODEX_DISABLED_FEATURES = [
   'code_mode_host', 'tool_suggest'
 ];
 
-/** Gemini CLI — `-p` is its non-interactive mode; it prints the answer bare. */
-const gemini = {
-  id: 'gemini',
-  cli: 'gemini',
-  async check(cfg, env) {
-    const r = await run('gemini', ['--version'], { env, timeoutMs: 20000 });
-    if (r.spawnError) return { ok: false, error: 'the Gemini CLI is not installed in this container' };
-    return r.code === 0 ? { ok: true, version: (r.stdout || '').trim().split('\n')[0] } : { ok: false, error: (r.stderr || '').trim().slice(0, 200) };
-  },
-  async invoke({ prompt, jobDir, env, model, timeoutMs }) {
-    const argv = ['-p'];
-    if (model) argv.push('-m', model);
-    const r = await run('gemini', argv, { stdin: prompt, env, cwd: jobDir, timeoutMs });
-    return { ...r, text: (r.stdout || '').trim() };
-  }
-};
-
 /** OpenAI Codex CLI — `exec` is the headless subcommand. */
 const codex = {
   id: 'codex',
@@ -53,34 +36,6 @@ const codex = {
     for (const feature of CODEX_DISABLED_FEATURES) argv.push('--disable', feature);
     if (model) argv.push('-m', model);
     const r = await run(CODEX_BIN, argv, { stdin: prompt, env, cwd: jobDir, timeoutMs });
-    return { ...r, text: (r.stdout || '').trim() };
-  }
-};
-
-/**
- * Owner-supplied command (FR-03). The contract is the whole interface: prompt on stdin, one
- * JSON object on stdout, non-zero exit means failure. api/coach/fixture-cli.mjs is a working
- * reference implementation — a local model wrapper only has to match that.
- *
- * The command is split on whitespace, never run through a shell: it is set by the instance
- * admin in a text field, and a field that can start a shell is a field that eventually does.
- */
-const custom = {
-  id: 'custom',
-  cli: null,
-  parse(cfg) {
-    const parts = String(cfg.customCommand || '').trim().split(/\s+/).filter(Boolean);
-    return { cmd: parts[0], argv: parts.slice(1) };
-  },
-  async check(cfg, env) {
-    const { cmd } = custom.parse(cfg);
-    if (!cmd) return { ok: false, error: 'no custom command configured' };
-    return { ok: true, version: cmd };
-  },
-  async invoke({ cfg, prompt, jobDir, env, timeoutMs }) {
-    const { cmd, argv } = custom.parse(cfg);
-    if (!cmd) return { code: -1, text: '', stderr: 'no custom command configured', spawnError: true };
-    const r = await run(cmd, argv, { stdin: prompt, env, cwd: jobDir, timeoutMs });
     return { ...r, text: (r.stdout || '').trim() };
   }
 };
@@ -106,6 +61,6 @@ const fixture = {
   }
 };
 
-const ADAPTERS = { claude, gemini, codex, custom, fixture };
+const ADAPTERS = { claude, codex, fixture };
 export const adapterFor = provider => ADAPTERS[provider] || null;
 export default ADAPTERS;

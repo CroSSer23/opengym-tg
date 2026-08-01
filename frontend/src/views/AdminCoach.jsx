@@ -89,11 +89,6 @@ export default function AdminCoach() {
         {d.providers.map(p => <button key={p.id} className={'chip' + (p.id === d.provider ? ' on' : '')}
           disabled={busy} onClick={() => patch({ provider: p.id })}>{p.label}</button>)}
       </div>
-      {d.provider === 'custom' && <div style={{ marginBottom: 10 }}>
-        <div className="dim small" style={{ marginBottom: 6 }}>Command run per job — prompt on stdin, one JSON object on stdout. See api/coach/fixture-cli.mjs for a working example.</div>
-        <TextField defaultValue={d.customCommand || ''} placeholder="/usr/local/bin/my-coach --json"
-          onBlur={e => e.target.value !== (d.customCommand || '') && patch({ customCommand: e.target.value })} />
-      </div>}
 
       {/* credential */}
       {(meta.setupToken || meta.deviceLogin || meta.apiKey) && <>

@@ -7,9 +7,6 @@
  * instance it is a provider an owner can select to walk the entire loop before connecting a
  * paid account to it.
  *
- * It is also the reference implementation of the `custom` provider contract (FR-03):
- * prompt on stdin, exactly one JSON object on stdout, non-zero exit means failure.
- *
  * Deliberately dependency-free and deliberately dumb: it reads the payload the server built,
  * echoes real ids back out of it, and never tries to be a coach. Tests assert on structure.
  */

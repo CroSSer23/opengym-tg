@@ -175,7 +175,7 @@ export async function disconnect() {
 /** Admin-card view of the credential. Never returns the token itself. */
 export function authStatus() {
   const cfg = load();
-  if (cfg.provider === 'fixture' || cfg.provider === 'custom') return { state: 'not-required' };
+  if (cfg.provider === 'fixture') return { state: 'not-required' };
   if (cfg.provider === 'codex') {
     if (!hasCodexAuth()) return { state: 'disconnected' };
     let connectedAt = null;
