@@ -9,13 +9,44 @@ import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
+import { coachAvailable, hasConsent } from '../lib/coach.js'
+import { useCoachStatus } from '../lib/coach-api.js'
+import { DEMO } from '../lib/demo.js'
+import { MOBILE } from '../lib/mobile.js'
+
+// A job in flight or a proposal waiting is the only reason the Coach interrupts Home. When it
+// has nothing to say it renders nothing at all — and it only polls while Home is on screen.
+function CoachCard({ nav }) {
+  const S = useStore(s => s.S)
+  const { job, pending } = useCoachStatus(hasConsent(S))
+  if (!hasConsent(S) || (!job && !pending)) return null
+  const ready = !!pending
+  return <div className="card" style={ready ? { borderColor: 'var(--acc)' } : null}>
+    <div className="today-row" onClick={() => nav(ready ? '/coach/proposal' : '/coach')}>
+      <div className="row" style={{ gap: 9, minWidth: 0 }}>
+        <span className="lrow-i" style={{ background: ready ? 'var(--acc)' : 'var(--orange)' }}><Icon name="sparkles" /></span>
+        <div style={{ minWidth: 0 }}>
+          <div className="lbl2">{t('Coach')}</div>
+          <div className="ttl">{ready
+            ? (pending.kind === 'create'
+              ? t('Your plan is ready')
+              : t(pending.changes?.length === 1 ? '{0} suggestion for you' : '{0} suggestions for you', pending.changes?.length || 0))
+            : t('Reading your training…')}</div>
+        </div>
+      </div>
+      {ready ? <span className="tag acc">{t('Review')}</span> : <Icon name="chevronRight" className="chev" />}
+    </div>
+  </div>
+}
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
   const user = useStore(s => s.user)
+  const config = useStore(s => s.config)
   const [weekOffset, setWeekOffset] = useState(0)
+  const coachOn = coachAvailable(config, user, { demo: DEMO, mobile: MOBILE })
 
   const today = new Date()
   const routine = effectiveRoutine(S, todayISO())
@@ -74,6 +105,8 @@ export default function Home() {
       </div>
     </div>
 
+    {coachOn && <CoachCard nav={nav} />}
+
     {!S.routines.length && !S.active && (
       <div className="card">
         <div className="row" style={{ gap: 10, marginBottom: 6 }}>
@@ -81,7 +114,11 @@ export default function Home() {
           <div className="big" style={{ fontSize: 22 }}>{t('Welcome!')}</div>
         </div>
         <div className="muted small" style={{ marginBottom: 12 }}>{t('Set up your weekly routine to get going — or load a ready-made Push / Pull / Legs plan.')}</div>
-        <Button variant="primary" icon="sparkles" onClick={loadStarterPlan}>{t('Load starter plan (PPL)')}</Button>
+        {coachOn && <>
+          <Button variant="primary" icon="sparkles" onClick={() => nav(hasConsent(S) ? '/coach/intake' : '/coach')}>{t('Let the Coach build it')}</Button>
+          <div style={{ height: 8 }} />
+        </>}
+        <Button variant={coachOn ? 'plain' : 'primary'} icon="sparkles" onClick={loadStarterPlan}>{t('Load starter plan (PPL)')}</Button>
         <div style={{ height: 8 }} /><Button onClick={() => nav('/plan')}>{t('Build my own plan')}</Button>
       </div>
     )}

@@ -2,6 +2,64 @@
 
 ## Unreleased
 
+### The AI Coach
+
+openGym could always progress a plan. It could never *write* one, and it never looked at the
+plan itself — the engine adjusted your weights inside whatever structure you had built, and the
+effort ratings you logged were, by the app's own admission, read by nothing.
+
+The Coach is an optional AI that does both jobs the engine deliberately doesn't: it designs
+plans, and it changes them when your training says they should change. It runs as a CLI on your
+own server, under your own provider account, and it is off until an admin turns it on.
+
+- 🤖 **It builds you a plan.** A six-screen intake — goal, experience, days, session length,
+  equipment, limitations, likes and dislikes — produces a complete weekly plan: routines,
+  exercise selection, sets × reps, supersets, the week schedule, and a progression policy per
+  routine with per-exercise overrides. Every exercise carries a sentence on why it is there.
+  Don't like it? Say so in your own words ("swap the squats for split squats, Mondays are
+  short") and the whole plan comes back revised.
+- 🔍 **It reads what actually happened.** On demand, or weekly, or after every N sessions: sets
+  hit and missed against their targets, effort trends, the stalls and deloads the engine fired,
+  sessions you keep moving to another day, session length against the time you said you had,
+  body weight against your goal, and muscle groups that got nothing. **Your RIR and RPE ratings
+  finally have a reader.**
+- ✅ **Changes you approve one at a time.** A review comes back as a list of discrete changes,
+  each with a before → after and a rationale naming the evidence — "bench came in at RPE ≥ 9.5
+  for three sessions and stalled twice; swapping to dumbbell press for four weeks". Tick the
+  ones you want. Advice with no plan change attached goes in a separate notes section and
+  applies nothing.
+- ↩️ **Nothing is one-way.** Accepting snapshots your plan first, so one tap puts it back.
+  Reverting a plan never touches a logged workout — the log is what happened.
+- 🚦 **It knows when to say nothing.** A review that finds no reason to change anything says so
+  and sends no notification. Suggestions you turn down are remembered, so the next review
+  doesn't re-propose them without new evidence.
+- 🔒 **The engine still owns your weights.** The Coach sets the plan and the policies; the
+  deterministic progression engine still computes every session's target and still tells you
+  why. Plans are where judgement lives, targets are where the math lives, and the math stays
+  auditable and offline.
+- 🧾 **A visible paper trail.** Every job, decision and applied change lands in a per-profile
+  Coach log that syncs with your data and travels in your JSON backup.
+- ⭐ **How did that feel?** An optional one-tap rating on the finish summary — too easy / about
+  right / brutal, plus a note. The Coach reads both.
+
+**For whoever runs the instance.** The provider CLI ships inside the api image, so there is
+nothing to install. Enable the Coach, connect an account and set spending caps entirely from
+the admin dashboard — no `.env` editing, no restart. The card shows CLI version, sign-in state,
+jobs run today and the last failure; it never shows anybody's intake answers, payloads or
+proposals. A **Fixture** provider walks the entire loop with no AI account at all.
+
+**For everyone else.** An instance with the Coach switched off is the app it was before, to the
+byte: no new UI, no new requests, no change to the state you sync. Turning it on adds one
+dismissible card until a profile consents, and consent is per profile — the admin enabling the
+feature does not enable it for you. The consent screen lists exactly which categories of data
+leave the server, names the provider, and says whose account pays. The mobile build has no
+server and hides it; the demo runs it against a canned local provider so you can try the loop.
+
+Under the hood: the CLI runs as an unprivileged user that cannot read `./data`, with a scrubbed
+environment and no tools; every answer is validated against a closed list of change types and
+the real exercise library before anyone sees it, with one repair round and then a clean
+failure. Credentials are encrypted at rest with a key derived from the instance secret.
+
 ### The effort ratings, read back as statistics
 
 v1.2.3 let you rate how hard a set was. Nothing then read that rating back — it lived in the set
