@@ -163,22 +163,28 @@ actually log. It is **off on a fresh instance**, and turning it on is entirely a
 
 ### What you are signing up for
 
-The provider CLI is built into the api image, but the *account* is yours: every plan or review
-is one session billed to whatever you connect. So budget for it, and use the caps below.
+The account is yours: every plan or review is one session on the provider account you connect,
+so budget for it and use the caps below. The built-in choices are Claude's official Agent SDK
+and a pinned OpenAI Codex CLI. Neither requires an API key: Claude uses an owner-created setup
+token, while Codex uses ChatGPT's device-code sign-in and stores its refreshable CLI cache only
+in the private `./data/codex` volume. Use the Codex option only on a trusted, owner-controlled
+server; that cache is equivalent to a password and must not be exposed to users or public code.
 
 ### Turning it on
 
 1. Open **Settings → Admin dashboard → AI Coach** and flip the switch.
-2. Pick a provider. Claude Code is the one the image ships with; the others are there for
-   instances that install their own CLI into a derived image.
-3. Click **Connect**. That opens the provider's sign-in in a new tab — use the account that
-   should pay for this. After you approve, the provider shows a one-time code; paste it back
-   into the dialog. (It is one paste rather than a redirect because a self-hosted domain can't
-   be a registered OAuth redirect target.)
-   Prefer an API key? **Use an API key** takes one instead, stored the same way.
-4. Hit **Test the Coach**. Green means a real round-trip to the model worked.
+2. Pick one built-in provider:
+   - **Claude Code**: on a trusted computer where you use Claude Code, run `claude setup-token`.
+     Complete its normal browser sign-in, copy the printed token, then choose **Add CLI token**
+     in openGym. The token is encrypted at rest and passed only to the isolated Agent SDK job.
+   - **OpenAI Codex CLI**: choose **Sign in with ChatGPT**, then use the link and one-time code
+     on a trusted browser or iPad. This is Codex's device-code login; openGym never receives a
+     ChatGPT password, API key, browser callback, or access token. Its private CLI cache lives
+     in `./data/codex` and is refreshed by Codex itself.
+3. Hit **Test the Coach**. Green means a real round-trip to the selected provider worked.
 
-The card then shows CLI version, sign-in state, jobs run today and the last failure, if any.
+The card then shows the runtime, credential state, jobs run today and the last failure, if any.
+For the complete no-API-key Codex flow, see [ChatGPT-setup-instructions.md](../ChatGPT-setup-instructions.md).
 
 ### Limits
 
@@ -214,8 +220,8 @@ connecting anything that costs money.
 
 | Symptom | Fix |
 |---|---|
-| "The Coach couldn't sign in to its provider" | The token expired or was revoked. Reconnect in the admin card. |
-| "The Coach isn't installed properly" | The CLI is missing from the image — you are running a custom build. Rebuild `api/`. |
+| "The Coach couldn't sign in to its provider" | For Claude, replace the setup token. For Codex, disconnect and complete **Sign in with ChatGPT** again. |
+| "The Coach isn't installed properly" | A bundled provider runtime is missing — rebuild the API image with `docker compose up -d --build`. |
 | "The Coach is resting" | A daily cap was hit. Raise it, or wait. |
 | "answered with something the app couldn't use" | The model produced output that failed validation twice. Usually transient; try again. |
 | Everything is grey and says force-disabled | `COACH_DISABLED=1` is set in the environment. |

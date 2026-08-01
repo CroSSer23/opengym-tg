@@ -17,7 +17,6 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import * as cfgStore from './config.js';
-import * as oauth from './oauth.js';
 import { adapterFor } from './adapters/index.js';
 import * as payloadLib from './payload.js';
 import { extractJSON, validatePlan, validateReview, contractOK } from './validate.js';
@@ -225,9 +224,6 @@ async function execute(job) {
   const adapter = adapterFor(cfg.provider);
   if (!adapter) return finish(job, { outcome: 'failed', errorClass: 'off' });
 
-  // A token that expires mid-week should cost one refresh, not one failed job.
-  try { await oauth.ensureFresh(); } catch { /* the invocation reports the real problem */ }
-
   const pendingCreate = job.refine ? readUser(job.uid).pending : null;
   const payload = payloadLib.build(S, job.uid, {
     kind: job.kind,
@@ -346,9 +342,10 @@ export async function testRun() {
   const jobDir = fs.mkdtempSync(path.join(os.tmpdir(), 'coach-test-'));
   const env = cfgStore.jobEnv(jobDir);
   try {
+    const ids = (await import('./adapters/spawn.js')).unprivilegedIds();
+    if (ids) fs.chownSync(jobDir, ids.uid, ids.gid);
     const check = await adapter.check(cfg, env);
-    if (!check.ok) return { ok: false, error: check.error || 'the CLI could not be run' };
-    try { await oauth.ensureFresh(); } catch { /* reported below by the round-trip itself */ }
+    if (!check.ok) return { ok: false, error: check.error || 'the provider runtime could not be run' };
     const r = await adapter.invoke({
       cfg, jobDir, env, model: cfg.model || null, timeoutMs: 90000,
       prompt: 'Reply with exactly this JSON object and nothing else: {"coach_contract":1,"ok":true}'
@@ -356,7 +353,7 @@ export async function testRun() {
     if (r.timedOut) return { ok: false, version: check.version, error: 'the provider did not answer in time' };
     if (r.code !== 0) {
       const err = (r.stderr || r.text || '').trim();
-      return { ok: false, version: check.version, error: err.slice(0, 300) || 'the CLI exited with an error' };
+      return { ok: false, version: check.version, error: err.slice(0, 300) || 'the provider runtime exited with an error' };
     }
     const parsed = extractJSON(r.text);
     if (parsed.error || !parsed.value?.ok) {

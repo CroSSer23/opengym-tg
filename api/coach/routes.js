@@ -107,12 +107,12 @@ export function coachRoutes({ json, readBody, readSession, requireAdmin }) {
         disabledByEnv: cfgStore.COACH_DISABLED,
         enabled: !!cfg.enabled,
         provider: cfg.provider,
-        providers: Object.entries(cfgStore.PROVIDERS).map(([id, p]) => ({ id, label: p.label, oauth: !!p.oauth, apiKey: !!p.apiKeyEnv })),
+        providers: Object.entries(cfgStore.PROVIDERS).map(([id, p]) => ({ id, label: p.label, runtime: p.runtime, setupToken: !!p.setupToken, deviceLogin: !!p.deviceLogin, apiKey: !!p.apiKeyEnv })),
         model: cfg.model,
         customCommand: cfg.customCommand,
         caps: cfg.caps,
-        cli: { ok: !!check.ok, version: check.version || null, error: check.error || null },
-        auth: oauth.authStatus(),
+        runtime: { ok: !!check.ok, version: check.version || null, error: check.error || null },
+        auth: await oauth.liveAuthStatus(),
         // Counts and outcomes only — never intake answers, payloads or proposals (FR-12/A4).
         jobsToday: log.filter(e => (e.at || '').slice(0, 10) === today).length,
         lastSuccess: cfgStore.lastSuccess(),
@@ -150,20 +150,29 @@ export function coachRoutes({ json, readBody, readSession, requireAdmin }) {
       json(res, 200, r);
     },
 
-    'POST /api/admin/coach/auth/start': async (req, res) => {
-      if (!requireAdmin(req, res)) return;
-      try { json(res, 200, oauth.start()); }
-      catch (e) { json(res, 400, { error: e.message }); }
-    },
-
-    'POST /api/admin/coach/auth/finish': async (req, res) => {
+    'POST /api/admin/coach/auth/setup-token': async (req, res) => {
       if (!requireAdmin(req, res)) return;
       const body = await readBody(req);
       try {
-        const r = await oauth.finish(body.code, body.state);
+        oauth.setSetupToken(body.token);
         const test = await jobs.testRun();
-        json(res, 200, { ok: true, account: r.account, test });
+        json(res, 200, { ok: true, test });
       } catch (e) { json(res, 400, { error: e.message }); }
+    },
+
+    // Codex itself performs the ChatGPT device-code authorization. This server only starts the
+    // local CLI, relays the short-lived instructions to the signed-in admin, and later checks
+    // whether Codex created its own private auth cache.
+    'POST /api/admin/coach/auth/chatgpt/device': async (req, res) => {
+      if (!requireAdmin(req, res)) return;
+      const body = await readBody(req);
+      try { json(res, 200, oauth.startCodexDeviceLogin({ replace: !!body.replace })); }
+      catch (e) { json(res, 400, { error: e.message }); }
+    },
+
+    'GET /api/admin/coach/auth/chatgpt/status': async (req, res) => {
+      if (!requireAdmin(req, res)) return;
+      json(res, 200, oauth.codexDeviceLoginStatus());
     },
 
     'POST /api/admin/coach/auth/key': async (req, res) => {
@@ -178,8 +187,10 @@ export function coachRoutes({ json, readBody, readSession, requireAdmin }) {
 
     'POST /api/admin/coach/auth/disconnect': async (req, res) => {
       if (!requireAdmin(req, res)) return;
-      oauth.disconnect();
-      json(res, 200, { ok: true });
+      try {
+        await oauth.disconnect();
+        json(res, 200, { ok: true });
+      } catch (e) { json(res, 400, { error: e.message }); }
     }
   };
 }

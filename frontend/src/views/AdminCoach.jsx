@@ -60,7 +60,7 @@ export default function AdminCoach() {
 
   const meta = d.providers.find(p => p.id === d.provider) || {}
   const authed = d.auth?.state === 'connected' || d.auth?.state === 'not-required'
-  const live = d.enabled && d.cli.ok && authed
+  const live = d.enabled && d.runtime.ok && authed
 
   return <div className="card" style={{ borderColor: live ? 'var(--acc)' : undefined }}>
     <div className="row between" style={{ marginBottom: 8 }}>
@@ -72,16 +72,16 @@ export default function AdminCoach() {
 
     {d.enabled && <>
       <div className="tiles" style={{ textAlign: 'left', marginBottom: 10 }}>
-        <div className="tile"><div className="l">CLI</div>
-          <div className="v" style={{ fontSize: '.9rem', color: d.cli.ok ? 'var(--green)' : 'var(--red)' }}>{d.cli.ok ? 'found' : 'missing'}</div></div>
-        <div className="tile"><div className="l">Sign-in</div>
+        <div className="tile"><div className="l">Runtime</div>
+          <div className="v" style={{ fontSize: '.9rem', color: d.runtime.ok ? 'var(--green)' : 'var(--red)' }}>{d.runtime.ok ? 'ready' : 'missing'}</div></div>
+        <div className="tile"><div className="l">Credential</div>
           <div className="v" style={{ fontSize: '.9rem', color: authed ? 'var(--green)' : 'var(--red)' }}>{authLabel(d.auth)}</div></div>
         <div className="tile"><div className="l">Jobs today</div><div className="v" style={{ fontSize: '1.1rem' }}>{d.jobsToday}</div></div>
         <div className="tile"><div className="l">Last run</div><div className="v" style={{ fontSize: '.85rem' }}>{rel(d.lastSuccess?.at)}</div></div>
       </div>
 
-      {d.cli.version && <div className="dim small" style={{ marginBottom: 8 }}>{meta.label} · {d.cli.version}</div>}
-      {!d.cli.ok && d.cli.error && <div className="small" style={{ color: 'var(--red)', marginBottom: 8 }}>{d.cli.error}</div>}
+      {d.runtime.version && <div className="dim small" style={{ marginBottom: 8 }}>{meta.runtime || meta.label} · {d.runtime.version}</div>}
+      {!d.runtime.ok && d.runtime.error && <div className="small" style={{ color: 'var(--red)', marginBottom: 8 }}>{d.runtime.error}</div>}
 
       {/* provider */}
       <h4 className="sec" style={{ marginTop: 4 }}>Provider</h4>
@@ -95,26 +95,31 @@ export default function AdminCoach() {
           onBlur={e => e.target.value !== (d.customCommand || '') && patch({ customCommand: e.target.value })} />
       </div>}
 
-      {/* sign-in */}
-      {(meta.oauth || meta.apiKey) && <>
-        <h4 className="sec">Sign-in</h4>
+      {/* credential */}
+      {(meta.setupToken || meta.deviceLogin || meta.apiKey) && <>
+        <h4 className="sec">Credential</h4>
         {d.auth?.state === 'connected' ? <>
           <div className="small muted" style={{ marginBottom: 8 }}>
-            Connected{d.auth.account ? ' as ' + d.auth.account : ''} via {d.auth.type === 'oauth' ? 'browser sign-in' : 'API key'} · {rel(d.auth.connectedAt)}
+            Connected{d.auth.account ? ' as ' + d.auth.account : ''} via {credentialLabel(d.auth.type)} · {rel(d.auth.connectedAt)}
           </div>
           <div className="row" style={{ gap: 8 }}>
             <Button size="sm" icon="check" disabled={busy} onClick={test}>Test the Coach</Button>
             <Button size="sm" danger disabled={busy} onClick={disconnect}>Disconnect</Button>
           </div>
         </> : <>
-          {d.auth?.state === 'expired' && <div className="small" style={{ color: 'var(--red)', marginBottom: 8 }}>The sign-in expired — connect again.</div>}
+          {d.auth?.state === 'expired' && <div className="small" style={{ color: 'var(--red)', marginBottom: 8 }}>The stored credential expired — connect again.</div>}
+          {d.auth?.state === 'replace-required' && <div className="small" style={{ color: 'var(--red)', marginBottom: 8 }}>
+            The old Claude credential is no longer used. Add a Claude Code setup token instead.
+          </div>}
           {d.auth?.state === 'unreadable' && <div className="small" style={{ color: 'var(--red)', marginBottom: 8 }}>
             The stored credential can't be decrypted — this usually means ./data was restored without its <code>secret</code> file. Connect again.
           </div>}
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            {meta.oauth && <Button size="sm" variant="primary" icon="key" disabled={busy}
-              onClick={() => openSheet(close => <ConnectSheet close={close} onDone={load} label={meta.label} />)}>Connect</Button>}
-            {meta.apiKey && <Button size="sm" icon="lock" disabled={busy}
+            {meta.setupToken && <Button size="sm" variant="primary" icon="key" disabled={busy}
+              onClick={() => openSheet(close => <SetupTokenSheet close={close} onDone={load} label={meta.label} />)}>Add CLI token</Button>}
+            {meta.deviceLogin && <Button size="sm" variant="primary" icon="key" disabled={busy}
+              onClick={() => openSheet(close => <ChatGPTLoginSheet close={close} onDone={load} label={meta.label} />)}>Sign in with ChatGPT</Button>}
+            {meta.apiKey && !meta.setupToken && <Button size="sm" icon="lock" disabled={busy}
               onClick={() => openSheet(close => <ApiKeySheet close={close} onDone={load} label={meta.label} />)}>Use an API key</Button>}
           </div>
         </>}
@@ -133,7 +138,7 @@ export default function AdminCoach() {
       <div className="dim small" style={{ marginBottom: 10 }}>0 = no limit. Every job is one session on your provider account.</div>
 
       <h4 className="sec">Model</h4>
-      <TextField defaultValue={d.model || ''} placeholder="(the CLI's default)"
+      <TextField defaultValue={d.model || ''} placeholder="(the provider default)"
         onBlur={e => e.target.value !== (d.model || '') && patch({ model: e.target.value })} />
 
       {d.lastError && <>
@@ -157,55 +162,92 @@ export default function AdminCoach() {
 }
 
 const authLabel = a => ({
-  connected: 'signed in', 'not-required': 'n/a', disconnected: 'needed', expired: 'expired', unreadable: 'unreadable'
+  connected: 'connected', 'not-required': 'n/a', disconnected: 'needed', expired: 'expired', unreadable: 'unreadable', 'replace-required': 'replace'
 }[a?.state] || '—')
 
-/* ---------------------------------- connect ---------------------------------- */
+const credentialLabel = type => ({
+  'cli-token': 'Claude Code setup token', 'chatgpt-cli': 'ChatGPT CLI login', oauth: 'legacy token', apikey: 'API key'
+}[type] || 'credential')
 
-// The provider's flow ends on a page that displays a one-time code rather than redirecting to
-// this instance — a self-hosted domain can't be a registered redirect URI. So: open, approve,
-// paste. One step more than a pure redirect, and no terminal anywhere.
-function ConnectSheet({ close, onDone, label }) {
+/* ------------------------------- setup token -------------------------------- */
+
+function SetupTokenSheet({ close, onDone, label }) {
   const toast = useUI(s => s.toast)
-  const [started, setStarted] = useState(null)
-  const [code, setCode] = useState('')
+  const [token, setToken] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const begin = async () => {
+  const save = async () => {
     setBusy(true)
     try {
-      const r = await api('/api/admin/coach/auth/start', { method: 'POST', body: '{}' })
-      setStarted(r)
-      window.open(r.url, '_blank', 'noopener')
-    } catch (e) { toast(e.message) }
-    setBusy(false)
-  }
-  const finish = async () => {
-    setBusy(true)
-    try {
-      const r = await api('/api/admin/coach/auth/finish', { method: 'POST', body: JSON.stringify({ code: code.trim(), state: started.state }) })
-      toast(r.test?.ok ? 'Connected ✅' : 'Connected, but the test failed: ' + (r.test?.error || ''))
+      const r = await api('/api/admin/coach/auth/setup-token', { method: 'POST', body: JSON.stringify({ token: token.trim() }) })
+      setToken('')
+      toast(r.test?.ok ? 'Connected ✅' : 'Saved, but the test failed: ' + (r.test?.error || ''))
       close(); onDone()
     } catch (e) { toast(e.message); setBusy(false) }
   }
 
   return <>
     <h3>Connect {label}</h3>
-    {!started ? <>
-      <div className="muted small" style={{ lineHeight: 1.5, marginBottom: 12 }}>
-        This opens {label} in a new tab. Sign in with the account that should pay for Coach usage — a subscription or an API account both work — and approve access.
-      </div>
-      <Button variant="primary" icon="key" disabled={busy} onClick={begin}>Open sign-in</Button>
-    </> : <>
-      <div className="muted small" style={{ lineHeight: 1.5, marginBottom: 12 }}>
-        After approving, the page shows a one-time code. Paste it here.
-      </div>
-      <TextField value={code} autoFocus placeholder="paste the code" onChange={e => setCode(e.target.value)} />
-      <div style={{ height: 12 }} />
-      <Button variant="primary" disabled={busy || !code.trim()} onClick={finish}>Finish connecting</Button>
-      <div style={{ height: 8 }} />
-      <Button disabled={busy} onClick={() => window.open(started.url, '_blank', 'noopener')}>Open the sign-in page again</Button>
-    </>}
+    <div className="muted small" style={{ lineHeight: 1.5, marginBottom: 12 }}>
+      On a trusted computer where you use Claude Code, run <code>claude setup-token</code>, complete its normal browser sign-in, then paste the token it prints here. This app never opens or handles Claude's authorization flow.
+    </div>
+    <TextField value={token} autoFocus type="password" placeholder="paste setup token" onChange={e => setToken(e.target.value)} />
+    <div style={{ height: 12 }} />
+    <Button variant="primary" disabled={busy || !token.trim()} onClick={save}>Save and test</Button>
+    <div style={{ height: 8 }} />
+  </>
+}
+
+/* ----------------------------- ChatGPT device login ----------------------------- */
+
+function ChatGPTLoginSheet({ close, onDone, label }) {
+  const toast = useUI(s => s.toast)
+  const [login, setLogin] = useState(null)
+  const [busy, setBusy] = useState(false)
+
+  const poll = async () => {
+    try {
+      const next = await api('/api/admin/coach/auth/chatgpt/status')
+      setLogin(next)
+      if (next.state === 'connected') {
+        toast('ChatGPT connected ✅')
+        close(); onDone()
+      }
+    } catch (e) { setLogin({ state: 'failed', error: e.message }) }
+  }
+
+  useEffect(() => {
+    if (!['starting', 'pending'].includes(login?.state)) return undefined
+    const timer = setInterval(poll, 1500)
+    return () => clearInterval(timer)
+  }, [login?.state])
+
+  const start = async () => {
+    setBusy(true)
+    try {
+      const next = await api('/api/admin/coach/auth/chatgpt/device', { method: 'POST', body: JSON.stringify({ replace: true }) })
+      setLogin(next)
+      if (next.state === 'connected') {
+        toast('ChatGPT connected ✅')
+        close(); onDone()
+      }
+    } catch (e) { toast(e.message); setLogin({ state: 'failed', error: e.message }) }
+    setBusy(false)
+  }
+
+  const waiting = ['starting', 'pending'].includes(login?.state)
+  return <>
+    <h3>Connect {label}</h3>
+    <div className="muted small" style={{ lineHeight: 1.5, marginBottom: 12 }}>
+      This starts Codex&apos;s official ChatGPT device-code sign-in inside the private Coach runtime. On your iPad or another trusted browser, open the link and enter the one-time code it shows. No API key is used or stored by OpenGym.
+    </div>
+    {!waiting && login?.state !== 'connected' && <Button variant="primary" disabled={busy} onClick={start}>Start device sign-in</Button>}
+    {waiting && <div className="small muted" style={{ marginBottom: 8 }}>Waiting for ChatGPT sign-in…</div>}
+    {login?.instructions && <pre className="small" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', padding: 10, margin: '10px 0', border: '1px solid var(--sep)', borderRadius: 8, background: 'var(--bg)' }}>{login.instructions}</pre>}
+    {login?.state === 'failed' && <div className="small" style={{ color: 'var(--red)', marginTop: 10 }}>{login.error || 'ChatGPT sign-in did not complete. Start it again.'}</div>}
+    <div className="dim small" style={{ marginTop: 12, lineHeight: 1.5 }}>
+      Codex stores its refreshable CLI login cache in this server&apos;s private Coach volume. It is treated like a password and is never shown in this app.
+    </div>
     <div style={{ height: 8 }} />
   </>
 }
@@ -225,7 +267,7 @@ function ApiKeySheet({ close, onDone, label }) {
   return <>
     <h3>{label} API key</h3>
     <div className="muted small" style={{ lineHeight: 1.5, marginBottom: 12 }}>
-      Stored encrypted on this server and passed to the CLI only while a job runs. It is never shown again and never leaves the server.
+      Stored encrypted on this server and passed to the provider runtime only while a job runs. It is never shown again and never leaves the server.
     </div>
     <TextField value={key} autoFocus type="password" placeholder="sk-…" onChange={e => setKey(e.target.value)} />
     <div style={{ height: 12 }} />

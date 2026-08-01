@@ -5,6 +5,7 @@ import { tempData, sampleState } from './helpers.mjs';
 
 const DIR = tempData();
 const cfg = await import('../coach/config.js');
+const auth = await import('../coach/oauth.js');
 const cadence = await import('../coach/cadence.js');
 
 /* ---------------- configuration ---------------- */
@@ -23,11 +24,11 @@ test('a provider that is enabled but not signed in is still not offered', () => 
 });
 
 test('credentials survive a round-trip and are unreadable in the file', () => {
-  cfg.save({ enabled: true, provider: 'claude', auth: { type: 'apikey', data: cfg.encrypt({ token: 'sk-ant-secret' }) } });
+  cfg.save({ enabled: true, provider: 'claude', auth: { type: 'cli-token', data: cfg.encrypt({ token: 'cli-setup-secret' }) } });
   assert.equal(cfg.isConnected(), true);
   const onDisk = fs.readFileSync(`${DIR}/coach.json`, 'utf8');
-  assert.ok(!onDisk.includes('sk-ant-secret'), 'the token is not sitting in the file in the clear');
-  assert.equal(cfg.decrypt(cfg.load().auth.data).token, 'sk-ant-secret');
+  assert.ok(!onDisk.includes('cli-setup-secret'), 'the token is not sitting in the file in the clear');
+  assert.equal(cfg.decrypt(cfg.load().auth.data).token, 'cli-setup-secret');
 });
 
 test('a credential encrypted under a different secret fails closed', () => {
@@ -39,23 +40,59 @@ test('a credential encrypted under a different secret fails closed', () => {
   cfg.reset();
 });
 
-test('the job environment carries the credential and nothing else', () => {
-  cfg.save({ enabled: true, provider: 'claude', auth: { type: 'oauth', data: cfg.encrypt({ token: 'oauth-tok' }) } });
+test('a Claude Code setup token is encrypted and reaches only the Agent SDK environment', () => {
+  cfg.save({ enabled: true, provider: 'claude', auth: null });
+  auth.setSetupToken('cli-setup-tok');
+  assert.equal(cfg.load().auth.type, 'cli-token');
+  assert.equal(auth.authStatus().type, 'cli-token');
   process.env.RP_ID = 'gym.example.com';
   process.env.ADMIN_UIDS = 'someadmin';
   const env = cfg.jobEnv('/tmp/jobdir');
-  assert.equal(env.CLAUDE_CODE_OAUTH_TOKEN, 'oauth-tok');
-  assert.equal(env.HOME, '/tmp/jobdir', 'the CLI writes its own config into the throwaway job dir');
+  assert.equal(env.CLAUDE_CODE_OAUTH_TOKEN, 'cli-setup-tok');
+  assert.equal(env.HOME, '/tmp/jobdir', 'the Agent SDK writes any transient state into the job dir');
+  assert.equal(env.CLAUDE_CONFIG_DIR, '/tmp/jobdir');
+  assert.equal(env.CLAUDE_CODE_DISABLE_AUTO_MEMORY, '1');
   assert.equal(env.RP_ID, undefined, 'nothing is inherited from this process');
   assert.equal(env.ADMIN_UIDS, undefined);
-  assert.deepEqual(Object.keys(env).sort(), ['CLAUDE_CODE_OAUTH_TOKEN', 'HOME', 'PATH', 'TMPDIR']);
+  assert.deepEqual(Object.keys(env).sort(), ['CLAUDE_CODE_DISABLE_AUTO_MEMORY', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CONFIG_DIR', 'HOME', 'PATH', 'TMPDIR']);
 });
 
-test('an API key goes in under the provider\'s key variable, not the OAuth one', () => {
-  cfg.save({ provider: 'claude', auth: { type: 'apikey', data: cfg.encrypt({ token: 'sk-ant-key' }) } });
+test('an API key goes in under a non-Claude provider\'s key variable, not the OAuth one', () => {
+  cfg.save({ provider: 'gemini', auth: { type: 'apikey', data: cfg.encrypt({ token: 'gemini-key' }) } });
   const env = cfg.jobEnv('/tmp/jobdir');
-  assert.equal(env.ANTHROPIC_API_KEY, 'sk-ant-key');
+  assert.equal(env.GEMINI_API_KEY, 'gemini-key');
   assert.equal(env.CLAUDE_CODE_OAUTH_TOKEN, undefined);
+});
+
+test('Codex uses its own ChatGPT CLI cache and never receives an API key', () => {
+  cfg.save({ enabled: true, provider: 'codex', auth: { type: 'apikey', data: cfg.encrypt({ token: 'legacy-openai-key' }) } });
+  cfg.ensureCodexHome();
+  const codexConfig = fs.readFileSync(`${cfg.codexHome()}/config.toml`, 'utf8');
+  assert.match(codexConfig, /shell_tool = false/);
+  assert.match(codexConfig, /":root" = "deny"/);
+  fs.writeFileSync(cfg.codexAuthFile(), '{}', { mode: 0o600 });
+
+  assert.equal(cfg.isConnected(), true);
+  assert.equal(auth.authStatus().type, 'chatgpt-cli');
+  assert.throws(() => auth.setApiKey('sk-not-used'), /ChatGPT/);
+
+  const env = cfg.jobEnv('/tmp/jobdir');
+  assert.equal(env.CODEX_HOME, cfg.codexHome());
+  assert.equal(env.OPENAI_API_KEY, undefined);
+  assert.equal(env.CODEX_API_KEY, undefined);
+  assert.equal(env.HOME, '/tmp/jobdir', 'the agent has no access to the persistent cache through HOME');
+  fs.unlinkSync(cfg.codexAuthFile());
+  assert.equal(cfg.isConnected(), false, 'a removed Codex cache fails closed');
+});
+
+test('legacy Claude credentials are disabled until replaced with a setup token', () => {
+  cfg.save({ enabled: true, provider: 'claude', auth: { type: 'apikey', data: cfg.encrypt({ token: 'sk-ant-key' }) } });
+  assert.equal(cfg.isConnected(), false);
+  assert.equal(auth.authStatus().state, 'replace-required');
+  const env = cfg.jobEnv('/tmp/jobdir');
+  assert.equal(env.ANTHROPIC_API_KEY, undefined);
+  assert.equal(env.CLAUDE_CODE_OAUTH_TOKEN, undefined);
+  assert.throws(() => auth.setApiKey('sk-ant-key'), /setup token/);
 });
 
 test('the instance job log records outcomes, never contents', () => {

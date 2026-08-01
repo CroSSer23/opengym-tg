@@ -34,8 +34,8 @@ const SECURE = /^https:/i.test(ORIGIN) ? ' Secure;' : '';
 
 fs.mkdirSync(DATA, { recursive: true });
 // 0700 is what stops the unprivileged user that Coach jobs run as from reading any of this —
-// state files, db.json, the session secret, the provider credential. The CLI gets its job
-// payload in a temp directory and nothing else. Best-effort: a bind-mounted host directory
+// state files, db.json, the session secret, the provider credential. The Agent SDK process gets
+// its job payload in a temp directory and nothing else. Best-effort: a bind-mounted host directory
 // may refuse the chmod, and that is not a reason to refuse to boot.
 try { fs.chmodSync(DATA, 0o700); } catch { /* host filesystem says no — carry on */ }
 
