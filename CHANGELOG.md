@@ -42,11 +42,13 @@ own server, under your own provider account, and it is off until an admin turns 
 - ⭐ **How did that feel?** An optional one-tap rating on the finish summary — too easy / about
   right / brutal, plus a note. The Coach reads both.
 
-**For whoever runs the instance.** The provider CLI ships inside the api image, so there is
-nothing to install. Enable the Coach, connect an account and set spending caps entirely from
-the admin dashboard — no `.env` editing, no restart. The card shows CLI version, sign-in state,
-jobs run today and the last failure; it never shows anybody's intake answers, payloads or
-proposals. A **Fixture** provider walks the entire loop with no AI account at all.
+**For whoever runs the instance.** Both provider runtimes — Claude's Agent SDK and a pinned
+OpenAI Codex CLI — ship inside the api image, so there is nothing to install and neither path
+needs an API key. Enable the Coach, sign in (a `claude setup-token` you paste, or Codex's
+ChatGPT device-code flow) and set spending caps entirely from the admin dashboard — no `.env`
+editing, no restart. The card shows runtime version, sign-in state, jobs run today and the last
+failure; it never shows anybody's intake answers, payloads or proposals. A **Fixture** provider
+walks the entire loop with no AI account at all.
 
 **For everyone else.** An instance with the Coach switched off is the app it was before, to the
 byte: no new UI, no new requests, no change to the state you sync. Turning it on adds one
@@ -55,10 +57,16 @@ feature does not enable it for you. The consent screen lists exactly which categ
 leave the server, names the provider, and says whose account pays. The mobile build has no
 server and hides it; the demo runs it against a canned local provider so you can try the loop.
 
-Under the hood: the CLI runs as an unprivileged user that cannot read `./data`, with a scrubbed
-environment and no tools; every answer is validated against a closed list of change types and
-the real exercise library before anyone sees it, with one repair round and then a clean
-failure. Credentials are encrypted at rest with a key derived from the instance secret.
+Under the hood: the provider runtime runs as an unprivileged user that cannot read `./data`,
+with a scrubbed environment and no tools; every answer is validated against a closed list of
+change types and the real exercise library before anyone sees it, with one repair round and
+then a clean failure. A pasted Claude setup token is encrypted at rest with a key derived from
+the instance secret; Codex's ChatGPT credential stays in Codex's own private cache, mounted
+separately from app data and never copied into `coach.json`.
+
+Documented in **[docs/AI_COACH.md](docs/AI_COACH.md)**, with setup walkthroughs for
+[Claude](Claude-setup-instructions.md) and [ChatGPT/Codex](ChatGPT-setup-instructions.md) and
+the design rationale in [openGym_AI_Strategy.pdf](openGym_AI_Strategy.pdf).
 
 ### The effort ratings, read back as statistics
 

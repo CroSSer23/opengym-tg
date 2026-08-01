@@ -13,3 +13,10 @@ frontend/dist/
 node_modules/
 *.log
 .DS_Store
+
+# Local AI-assistant tooling — contributor's own setup, not part of the app
+.claude/
+.codex/
+CLAUDE.md
+AGENTS.md
+graphify-out/
