@@ -66,7 +66,7 @@ test('retired Gemini and Custom command configurations reset to unconfigured Cla
   });
   cfg.reset();
   const current = cfg.load();
-  assert.deepEqual(Object.keys(cfg.PROVIDERS).sort(), ['claude', 'codex', 'fixture']);
+  assert.deepEqual(Object.keys(cfg.PROVIDERS).sort(), ['claude', 'codex', 'fixture', 'openai']);
   assert.equal(current.provider, 'claude');
   assert.equal(current.auth, null);
   assert.equal(Object.hasOwn(current, 'customCommand'), false);
@@ -154,4 +154,22 @@ test('weekly does not fire twice on the same day', () => {
     lastReview: { at: new Date('2026-07-26T18:00:00Z').getTime() }
   });
   assert.equal(cadence.isDue(coach, S, { date: '2026-07-26', hhmm: '18:00', weekday: 0 }), false);
+});
+
+test('an OpenAI-compatible endpoint is connected once it has a URL and a model', () => {
+  cfg.save({ enabled: true, provider: 'openai', baseUrl: null, model: null, auth: null });
+  assert.equal(cfg.isConnected(), false, 'nowhere to send a job');
+  cfg.save({ baseUrl: 'https://gw.example/v1' });
+  assert.equal(cfg.isConnected(), false, 'a raw endpoint has no default model');
+  cfg.save({ model: 'some-model' });
+  assert.equal(cfg.isConnected(), true, 'a LAN endpoint needs no key, so none is demanded');
+  assert.deepEqual(cfg.publicConfig(), { enabled: true, provider: 'openai', providerLabel: 'OpenAI-compatible endpoint' });
+});
+
+test('an endpoint key reaches the job as OPENAI_API_KEY and nothing else does', () => {
+  cfg.save({ enabled: true, provider: 'openai', baseUrl: 'https://gw.example/v1', model: 'm', auth: { type: 'apikey', data: cfg.encrypt({ token: 'sk-endpoint' }) } });
+  const env = cfg.jobEnv('/tmp/job');
+  assert.equal(env.OPENAI_API_KEY, 'sk-endpoint');
+  assert.equal(env.CLAUDE_CODE_OAUTH_TOKEN, undefined, 'a credential belongs to the provider that issued it');
+  assert.equal(env.CODEX_HOME, undefined, 'this provider spawns nothing, so it gets no cache');
 });

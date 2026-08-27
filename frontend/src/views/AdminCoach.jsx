@@ -90,6 +90,17 @@ export default function AdminCoach() {
           disabled={busy} onClick={() => patch({ provider: p.id })}>{p.label}</button>)}
       </div>
 
+      {/* endpoint - only the OpenAI-compatible provider has one to choose */}
+      {meta.baseUrl && <>
+        <h4 className="sec">Endpoint</h4>
+        <TextField defaultValue={d.baseUrl || ''} placeholder="https://api.openai.com/v1"
+          onBlur={e => e.target.value.trim() !== (d.baseUrl || '') && patch({ baseUrl: e.target.value.trim() })} />
+        <div className="dim small" style={{ margin: '6px 0 10px', lineHeight: 1.5 }}>
+          Any server that answers <code>POST /chat/completions</code>. A bare host gets <code>/v1</code> appended.
+          {meta.keyOptional && ' A key is optional for an endpoint on your own network.'}
+        </div>
+      </>}
+
       {/* credential */}
       {(meta.setupToken || meta.deviceLogin || meta.apiKey) && <>
         <h4 className="sec">Credential</h4>
@@ -133,8 +144,11 @@ export default function AdminCoach() {
       <div className="dim small" style={{ marginBottom: 10 }}>0 = no limit. Every job is one session on your provider account.</div>
 
       <h4 className="sec">Model</h4>
-      <TextField defaultValue={d.model || ''} placeholder="(the provider default)"
+      <TextField defaultValue={d.model || ''} placeholder={meta.baseUrl ? 'required, e.g. gpt-4.1-mini' : '(the provider default)'}
         onBlur={e => e.target.value !== (d.model || '') && patch({ model: e.target.value })} />
+      {meta.baseUrl && !d.model && <div className="small" style={{ color: 'var(--red)', marginTop: 6 }}>
+        A raw endpoint has no default model - name the one to send jobs to.
+      </div>}
 
       {d.lastError && <>
         <h4 className="sec">Last failure</h4>

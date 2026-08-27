@@ -54,6 +54,7 @@ provider dies, the engine carries on offline without skipping a beat.
 | --- | --- | --- | --- |
 | **Claude Code** | Claude Agent SDK | `claude setup-token` on a trusted machine, pasted into the admin card | [Claude setup guide](../Claude-setup-instructions.md) |
 | **OpenAI Codex** | Codex CLI (pinned, bundled) | ChatGPT device-code sign-in from the admin card | [ChatGPT / Codex setup guide](../ChatGPT-setup-instructions.md) |
+| **OpenAI-compatible endpoint** | one HTTPS POST to `/chat/completions` | an endpoint URL, a model name, and an API key if the endpoint wants one | [Endpoint setup](#bringing-your-own-endpoint) |
 | **Fixture** | in-repo fake | nothing — no AI account at all | walks the whole loop for demos and CI |
 
 Both runtimes are built into the `api` image, so a self-hoster installs nothing. Neither path
@@ -64,7 +65,39 @@ credentials.
 > owner-supplied custom command. Those adapters were built and then retired before release; a
 > stored configuration pointing at either resets to an unconfigured Claude. Adding a provider is
 > still one adapter file plus one row in `api/coach/config.js` — nothing else branches on
-> provider identity.
+> provider identity. The endpoint adapter below is what that claim looks like when it is cashed.
+
+### Bringing your own endpoint
+
+The other two providers wrap a CLI: openGym starts a process, and the process talks to a vendor.
+The endpoint provider skips the middle step and posts to `/chat/completions` itself, which makes
+it the way to run the Coach on anything that speaks that dialect — OpenAI, OpenRouter, a LiteLLM
+or vLLM gateway, or an Ollama on your own LAN.
+
+Configure it in **Settings → Admin → AI Coach**:
+
+| Field | What to put in it |
+| --- | --- |
+| **Endpoint** | `https://api.openai.com/v1`, `http://ollama.lan:11434/v1`, your gateway's base. A bare host gets `/v1` appended; a URL that already ends in `/chat/completions` is used verbatim. |
+| **Model** | Required — a raw endpoint has no default. Whatever id your endpoint answers to. |
+| **Credential** | "Use an API key", unless the endpoint is on your own network and wants none. |
+
+Two things are worth knowing about how it behaves:
+
+- **It negotiates down, once.** The first request asks for JSON mode, a low temperature and a
+  generous token ceiling. Endpoints in this family each reject a different one of those; when
+  one does, the adapter drops exactly the field the error named and retries on the same clock,
+  then remembers the downgrade so nobody pays for that 400 twice.
+- **It spawns nothing.** The isolation the CLI providers need — an unprivileged user, a scrubbed
+  environment, a throwaway job directory — exists because those providers run code on your box.
+  This one makes an outbound HTTPS request and reads the reply. That is a smaller blast radius,
+  not a larger one, and the same allowlisted payload goes out and the same validator gates what
+  comes back.
+
+Model choice matters more here than with the CLI providers, because there is no vendor picking a
+sensible default for you. The Coach asks for a single structured JSON object over a long prompt;
+small local models tend to fail the validator rather than produce a bad plan, which is the right
+failure but still a failure. Anything in the class of GPT-4.1-mini or better handles it.
 
 ---
 

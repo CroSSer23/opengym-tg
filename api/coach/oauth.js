@@ -176,6 +176,9 @@ export async function disconnect() {
 export function authStatus() {
   const cfg = load();
   if (cfg.provider === 'fixture') return { state: 'not-required' };
+  // A local OpenAI-compatible endpoint legitimately takes no credential. Reporting that as
+  // "disconnected" would put a red light on a working instance.
+  if (cfg.provider === 'openai' && !cfg.auth) return { state: 'not-required' };
   if (cfg.provider === 'codex') {
     if (!hasCodexAuth()) return { state: 'disconnected' };
     let connectedAt = null;

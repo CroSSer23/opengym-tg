@@ -107,8 +107,9 @@ export function coachRoutes({ json, readBody, readSession, requireAdmin }) {
         disabledByEnv: cfgStore.COACH_DISABLED,
         enabled: !!cfg.enabled,
         provider: cfg.provider,
-        providers: Object.entries(cfgStore.PROVIDERS).map(([id, p]) => ({ id, label: p.label, runtime: p.runtime, setupToken: !!p.setupToken, deviceLogin: !!p.deviceLogin, apiKey: !!p.apiKeyEnv })),
+        providers: Object.entries(cfgStore.PROVIDERS).map(([id, p]) => ({ id, label: p.label, runtime: p.runtime, setupToken: !!p.setupToken, deviceLogin: !!p.deviceLogin, apiKey: !!p.apiKeyEnv, baseUrl: !!p.baseUrl, keyOptional: !!p.keyOptional })),
         model: cfg.model,
+        baseUrl: cfg.baseUrl,
         caps: cfg.caps,
         runtime: { ok: !!check.ok, version: check.version || null, error: check.error || null },
         auth: await oauth.liveAuthStatus(),
@@ -132,6 +133,17 @@ export function coachRoutes({ json, readBody, readSession, requireAdmin }) {
         patch.provider = body.provider;
       }
       if (body.model !== undefined) patch.model = body.model ? String(body.model).slice(0, 80) : null;
+      if (body.baseUrl !== undefined) {
+        const raw = String(body.baseUrl || '').trim().slice(0, 300);
+        if (raw) {
+          // Parsed here rather than at request time so a typo is refused while the operator is
+          // still looking at the field, not three minutes into a job.
+          let url;
+          try { url = new URL(raw); } catch { return json(res, 400, { error: 'that is not a valid URL' }); }
+          if (url.protocol !== 'http:' && url.protocol !== 'https:') return json(res, 400, { error: 'the endpoint URL must be http or https' });
+        }
+        patch.baseUrl = raw || null;
+      }
       if (body.caps) {
         patch.caps = {
           perProfileDaily: Math.max(0, Math.min(200, +body.caps.perProfileDaily || 0)),

@@ -30,6 +30,10 @@ export const COACH_DISABLED = /^(1|true|yes|on)$/i.test(process.env.COACH_DISABL
 export const PROVIDERS = {
   claude: { label: 'Claude Code', runtime: 'Claude Agent SDK', setupToken: true, apiKeyEnv: 'ANTHROPIC_API_KEY', oauthEnv: 'CLAUDE_CODE_OAUTH_TOKEN' },
   codex: { label: 'OpenAI Codex CLI', runtime: 'OpenAI Codex CLI', deviceLogin: true, apiKeyEnv: null, oauthEnv: null },
+  // Any server that speaks POST /chat/completions: OpenAI itself, OpenRouter, LiteLLM, vLLM,
+  // Ollama, llama.cpp. The only provider whose endpoint the operator chooses, so the only one
+  // that needs `baseUrl` -- and the key is optional, because a LAN endpoint has none.
+  openai: { label: 'OpenAI-compatible endpoint', runtime: 'HTTP chat/completions', apiKeyEnv: 'OPENAI_API_KEY', oauthEnv: null, baseUrl: true, keyOptional: true },
   // Test-only: drives the in-repo fixture CLI. Selectable so an instance can be exercised
   // end-to-end (and demoed) without any AI account at all.
   fixture: { label: 'Fixture (testing)', runtime: 'Fixture', apiKeyEnv: null, oauthEnv: null }
@@ -39,6 +43,7 @@ const DEFAULTS = {
   enabled: false,
   provider: 'claude',
   model: null,
+  baseUrl: null,                                 // the `openai` provider only
   auth: null,                                    // { type:'cli-token'|'oauth'|'apikey', data:<encrypted> }
   caps: { perProfileDaily: 10, instanceDaily: 0 },   // 0 = unlimited
   log: []
@@ -153,6 +158,11 @@ export function isConnected() {
   if (cfg.provider === 'fixture') return true;
   // Codex's ChatGPT credential remains in Codex's own auth.json cache, not coach.json.
   if (cfg.provider === 'codex') return hasCodexAuth();
+  // An OpenAI-compatible endpoint is reachable once it has somewhere to talk to and a model
+  // to name. The key is genuinely optional (a LAN Ollama takes none), so requiring one would
+  // make a working configuration report itself broken. A wrong or missing key surfaces as a
+  // 401 from check() and from "Test the Coach", which is where an operator can act on it.
+  if (cfg.provider === 'openai') return !!cfg.baseUrl && !!cfg.model;
   // Claude is intentionally setup-token only. Do not silently retain the old browser OAuth or
   // API-key paths after the instance has been upgraded to the Agent SDK flow.
   if (cfg.provider === 'claude' && cfg.auth?.type !== 'cli-token') return false;
