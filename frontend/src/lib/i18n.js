@@ -6,14 +6,14 @@
 import { useSyncExternalStore } from 'react'
 
 // UI languages. Ukrainian sits second because this fork is maintained in Ukraine, and Russian
-// sits last; the rest keep upstream's order. de/pt/uk have no instruction pack in the upstream
-// dataset, so exercise instructions fall back to English until a pack exists for them.
+// sits last; the rest keep upstream's order. Every language has an instruction pack — upstream
+// shipped ten, this fork adds uk/de/pt (see scripts/instructions/).
 export const LANGS = {
   en: 'English', uk: 'Українська', de: 'Deutsch', es: 'Español', fr: 'Français',
   it: 'Italiano', pt: 'Português', pl: 'Polski', tr: 'Türkçe', zh: '中文',
   ko: '한국어', hi: 'हिन्दी', ru: 'Русский'
 }
-export const INSTR_LANGS = ['en', 'es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko']
+export const INSTR_LANGS = Object.keys(LANGS)
 const DATE_LOCALES = {
   en: 'en-GB', uk: 'uk-UA', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT',
   pt: 'pt-PT', pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN'
