@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, allExercises, equipmentOf } from './lib/exercises.js'
-import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
+import { fmtDate, fmtNum, fmtPlate, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
 import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf } from './lib/history.js'
 import { beep, vibrate } from './lib/sound.js'
 import { t, instrFor, getLang, INSTR_LANGS } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
-import { starterRoutines } from './lib/starter.js'
+import { STARTER_PLANS, planRoutines, planWeek } from './lib/starter.js'
+import { plateBreakdown, DEFAULT_BAR } from './lib/plates.js'
+import { SITES, siteName, lengthUnit, latest, measuredSites, putMeasure } from './lib/measures.js'
 import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
@@ -43,13 +45,50 @@ export function confirmSheet(opts) {
 }
 
 /* ============================ starter plan ============================ */
+/**
+ * Load one of the ready-made plans. There are four now, so this is a choice rather than a
+ * button: the right shape depends on how many days a week someone can actually train, which
+ * is the one thing the app cannot infer for them.
+ *
+ * Loading adds routines and fills in the days that plan wants. It never clears what is
+ * already there — importing a plan has always merged rather than replaced, and picking a
+ * starter plan is the same act.
+ */
 export function loadStarterPlan() {
-  const [push, pull, legs] = starterRoutines()
-  update(st => {
-    st.routines.push(push, pull, legs)
-    st.week[1] = push.id; st.week[3] = pull.id; st.week[5] = legs.id
-  })
-  toast(t('Starter plan loaded — Mon Push · Wed Pull · Fri Legs'))
+  ui().openSheet(close => <StarterPlanSheet close={close} />)
+}
+
+function StarterPlanSheet({ close }) {
+  const apply = plan => {
+    close()
+    const routines = planRoutines(plan)
+    update(st => {
+      st.routines.push(...routines)
+      Object.assign(st.week, planWeek(plan, routines))
+    })
+    toast(t('{0} loaded — {1}', t(plan.name), t(plan.schedule)))
+  }
+  return <>
+    <h3>{t('Starter plans')}</h3>
+    <div className="muted small" style={{ marginBottom: 14, lineHeight: 1.5 }}>
+      {t('A week you can start today and change later. Loading one adds its routines and fills in the days it asks for — nothing already in your plan is removed.')}
+    </div>
+    <div className="list">
+      {STARTER_PLANS.map(p => (
+        <button key={p.key} className="item" style={{ alignItems: 'flex-start', paddingTop: 13, paddingBottom: 13 }} onClick={() => apply(p)}>
+          <div className="grow">
+            <div className="row between" style={{ gap: 8 }}>
+              <span className="tt">{t(p.name)}</span>
+              <span className="tag nocap">{t('{0} days', p.days)}</span>
+            </div>
+            <div className="ss">{t(p.schedule)}</div>
+            <div className="ss dim" style={{ marginTop: 4 }}>{t(p.blurb)}</div>
+          </div>
+        </button>
+      ))}
+    </div>
+    <div style={{ height: 8 }} />
+  </>
 }
 
 /* ============================ weight picker (shared: body weight + goal) ============================ */
@@ -280,6 +319,32 @@ function OneRM({ ex }) {
   </>
 }
 
+/**
+ * A note about the lift itself, not about one routine's copy of it. "Elbows tucked, pause on
+ * the chest" is true wherever the exercise appears, so re-typing it into three routines is
+ * only a way of letting two of them go stale.
+ */
+function ExerciseNote({ ex }) {
+  const note = useStore(s => (s.S.exNotes || {})[ex.id] || '')
+  const [draft, setDraft] = useState(note)
+  const [open, setOpen] = useState(!!note)
+  const commit = () => update(s => {
+    s.exNotes = s.exNotes || {}
+    const v = draft.trim().slice(0, 600)
+    // An emptied note is removed rather than stored as "", so a backup carries notes and not
+    // a list of exercises somebody once thought about.
+    if (v) s.exNotes[ex.id] = v; else delete s.exNotes[ex.id]
+  })
+  if (!open) return (
+    <Button size="sm" icon="pencil" style={{ margin: '2px 0 10px' }} onClick={() => setOpen(true)}>{t('Add a note')}</Button>
+  )
+  return <div style={{ margin: '2px 0 12px' }}>
+    <h4 className="sec" style={{ marginTop: 4 }}>{t('Your note')}</h4>
+    <textarea className="input area" rows={3} maxLength={600} value={draft} placeholder={t('Cues, setup, a niggle to watch — anything you want in front of you next time.')}
+      onChange={e => setDraft(e.target.value)} onBlur={commit} />
+  </div>
+}
+
 function ExerciseDetail({ ex, close }) {
   const st = useStore(s => s.S)
   const last = lastEntryFor(st, ex.id)
@@ -294,6 +359,7 @@ function ExerciseDetail({ ex, close }) {
       {(ex.sm || []).slice(0, 3).map((s, i) => <span key={i} className="tag">{t(s)}</span>)}
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
+    <ExerciseNote ex={ex} />
     {best > 0 && <div className="small row" style={{ marginBottom: 6, gap: 5 }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)' }} />{t('Best:')} <b className="accent">{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</div>}
     <Button variant="primary" icon="plus" style={{ margin: '10px 0 4px' }} onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
     {ex.custom && <div className="row" style={{ gap: 8, marginTop: 8 }}>
@@ -305,6 +371,98 @@ function ExerciseDetail({ ex, close }) {
   </>
 }
 export const exerciseDetailSheet = ex => ui().openSheet(close => <ExerciseDetail ex={ex} close={close} />)
+
+/* ============================ plate calculator ============================ */
+/**
+ * Every weight in this app is a total, because that is what gets logged and what the engine
+ * reasons about. In front of the rack the useful number is the other one, and working it out
+ * between sets is exactly when people load 2.5 kg wrong and never notice, because the log
+ * records what was asked for rather than what was lifted.
+ */
+function PlateSheet({ weight, close }) {
+  const st = useStore(s => s.S)
+  const unit = st.unit || 'kg'
+  const bar = st.bar > 0 ? st.bar : DEFAULT_BAR[unit]
+  const b = plateBreakdown(weight, { unit, bar })
+  return <>
+    <h3>{t('On the bar')}</h3>
+    <div className="row" style={{ alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+      <span className="fig" style={{ fontSize: 40 }}>{fmtNum(weight)}</span>
+      <span className="unit">{unit}</span>
+      <span className="dim small" style={{ marginLeft: 'auto' }}>{t('bar {0} {1}', fmtNum(bar), unit)}</span>
+    </div>
+    {b.reason === 'below-bar' ? (
+      <div className="small" style={{ color: 'var(--orange)', margin: '10px 0 4px', lineHeight: 1.5 }}>
+        {t('That is lighter than the bar on its own. Change the bar in Settings if you train with a lighter one.')}
+      </div>
+    ) : b.perSide.length === 0 ? (
+      <div className="muted small" style={{ margin: '10px 0 4px' }}>{t('Just the bar.')}</div>
+    ) : <>
+      <h4 className="sec">{t('Each side')}</h4>
+      <div className="sect-b">
+        {b.perSide.map(({ plate, count }) => (
+          <div key={plate} className="lrow">
+            <span className="lrow-m"><span className="lrow-t fig">{fmtPlate(plate)} <span className="unit">{unit}</span></span></span>
+            <span className="lrow-v">× {count}</span>
+          </div>
+        ))}
+      </div>
+    </>}
+    {!b.ok && b.reason !== 'below-bar' && (
+      <div className="small" style={{ color: 'var(--orange)', marginTop: 10, lineHeight: 1.5 }}>
+        {t('Closest you can load is {0} {1} — the last {2} {1} has no plate for it.', fmtNum(b.loaded), unit, fmtNum(b.leftover))}
+      </div>
+    )}
+    <div style={{ height: 14 }} />
+    <Button onClick={close}>{t('Done')}</Button>
+    <div style={{ height: 8 }} />
+  </>
+}
+export const plateSheet = weight => ui().openSheet(close => <PlateSheet weight={weight} close={close} />)
+
+/* ============================ body measurements ============================ */
+// Logged one site at a time, on purpose. A form with nine boxes gets filled in once with a
+// tape and afterwards with guesses, and a guessed number in a trend line is worse than a gap.
+function MeasureSheet({ close }) {
+  const st = useStore(s => s.S)
+  const lu = lengthUnit(st.unit)
+  const [k, setK] = useState(measuredSites(st)[0] || 'waist')
+  const prev = latest(st, k)
+  const [v, setV] = useState(prev ? String(prev.v) : '')
+  // Switching site re-seeds from that site's last reading: a tape rarely moves far, and
+  // typing 84.5 from scratch every month is how people stop logging.
+  useEffect(() => { const l = latest(useStore.getState().S, k); setV(l ? String(l.v) : '') }, [k])
+
+  const save = () => {
+    const val = Math.round((parseFloat(String(v).replace(',', '.')) || 0) * 10) / 10
+    if (!(val > 0)) { toast(t('Enter a measurement first')); return }
+    close()
+    update(s => { putMeasure(s, k, val, todayISO()) })
+    toast(t('{0}: {1} {2}', t(siteName(k)), fmtNum(val), lu))
+  }
+
+  return <>
+    <h3>{t('Log a measurement')}</h3>
+    <div className="sect-b" style={{ marginBottom: 6 }}>
+      <SelectRow title={t('Site')} sheetTitle={t('Measure')} value={k} onChange={setK}
+        options={SITES.map(s => {
+          const l = latest(st, s.k)
+          return { value: s.k, label: t(s.name), subtitle: l ? fmtNum(l.v) + ' ' + lu + ' · ' + fmtDate(l.d, true) : t('not measured yet') }
+        })} />
+    </div>
+    <div className="bwin">
+      <input type="text" inputMode="decimal" autoFocus value={v} placeholder="0"
+        onChange={e => setV(e.target.value.replace(/[^0-9.,]/g, ''))} />
+      <span>{lu}</span>
+    </div>
+    <div className="dim small" style={{ textAlign: 'center', marginBottom: 14 }}>
+      {prev ? t('Last: {0} {1} on {2}', fmtNum(prev.v), lu, fmtDate(prev.d, true)) : t('Measured today. Same spot, same tape tension, next time.')}
+    </div>
+    <Button variant="primary" onClick={save}>{t('Save')}</Button>
+    <div style={{ height: 8 }} />
+  </>
+}
+export const measureSheet = () => ui().openSheet(close => <MeasureSheet close={close} />)
 
 /* ============================ add to routine ============================ */
 function AddToRoutine({ ex, close }) {

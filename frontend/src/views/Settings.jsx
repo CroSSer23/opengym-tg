@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ACCENTS, todayISO, localTZ } from '../lib/format.js'
+import { ACCENTS, fmtNum, todayISO, localTZ } from '../lib/format.js'
 import { effortOf } from '../lib/history.js'
 import { api, webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { IN_TELEGRAM, initData as tgInitData, haptic } from '../lib/telegram.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
+import { DEFAULT_BAR } from '../lib/plates.js'
 import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
@@ -120,6 +121,15 @@ export default function Settings() {
     </Section>
 
     {/* ---------- during a workout ---------- */}
+    <Section title={t('Equipment')} footer={t('Used by the plate calculator, which opens when you tap a prescribed weight during a workout.')}>
+      <Row icon="barbell" iconTint="var(--label-3)" title={t('Bar weight')}
+        subtitle={t('Standard is {0} {1}.', fmtNum(DEFAULT_BAR[S.unit] || 20), S.unit)}>
+        <input className="num" type="number" min="0" max="100" step="0.5" style={{ width: 74 }}
+          defaultValue={S.bar || DEFAULT_BAR[S.unit] || 20}
+          onBlur={e => update(s => { const v = Math.max(0, +e.target.value || 0); s.bar = v === (DEFAULT_BAR[s.unit] || 20) ? null : v })} />
+      </Row>
+    </Section>
+
     <Section title={t('During a workout')} footer={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : null}>
       <SelectRow icon="timer" iconTint="var(--orange)" title={t('Rest timer')}
         value={S.restSec} onChange={v => update(s => { s.restSec = v })}

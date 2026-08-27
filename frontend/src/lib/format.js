@@ -25,6 +25,10 @@ export const durPart = ms => (ms >= 60000 ? [fmtDur(ms)] : [])
 // Numbers follow the UI language, like the dates above — a hardcoded locale put Swiss
 // apostrophes ("7'535 kg") in front of every user, in every language.
 export const fmtNum = n => (Math.round(n * 10) / 10).toLocaleString(dateLocale())
+// A plate denomination is a physical object with a number stamped on it, so it is the one
+// place a weight must not be rounded to one decimal: a 1.25 kg disc printed as "1,3" sends
+// someone looking along the rack for a plate that does not exist.
+export const fmtPlate = n => Number(n).toLocaleString(dateLocale(), { maximumFractionDigits: 2 })
 // Volume stays in the profile's unit throughout: the old shorthand turned anything over
 // 10 000 into "t", which is wrong for a pound profile and made one list mix "18.8t" with
 // "7'535 kg" — two numbers you can't compare at a glance.

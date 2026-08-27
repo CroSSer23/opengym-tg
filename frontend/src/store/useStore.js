@@ -12,6 +12,10 @@ export const DEF = {
   theme: 'dark', accent: 'lime', body: 'male', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
+  // Notes keyed by exercise, not by routine entry: a cue is true of the lift wherever it
+  // appears. `bar` is the barbell this gym has, for the plate calculator; unset means the
+  // standard one for the unit.
+  exNotes: {}, bar: null, measures: [],
   // effort: which per-set effort scale is logged — 'none' | 'rir' | 'rpe'. null, not 'none', so
   // that a profile which never chose (loaded state is overlaid on DEF, on every path: local,
   // server pull, backup import) still falls back to the `showRir` boolean this replaced and

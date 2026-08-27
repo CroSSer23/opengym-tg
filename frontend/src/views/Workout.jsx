@@ -9,7 +9,7 @@ import { beep, vibrate } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { api } from '../lib/api.js'
 import Media from '../components/Media.jsx'
-import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
+import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet, plateSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
 import { nextPrescription, applyPrescription, targetOf, targetState, WEEKS_531 } from '../lib/progression.js'
@@ -78,7 +78,7 @@ function TargetStrip({ entry, mode, unit }) {
     const top = tgt.perSet[tgt.perSet.length - 1]
     return <div className="tgt">
       <span className="unit">{t('Top set')}</span>
-      <span className={'gt ' + state}>{fmtNum(top.w)}</span>
+      <button className={'gt ' + state} onClick={() => plateSheet(top.w)} aria-label={t('On the bar')}>{fmtNum(top.w)}</button>
       <span className="op">×</span>
       <span className={'gt ' + state}>{top.r}{top.amrap ? '+' : ''}</span>
       <span className="unit">{unit}</span>
@@ -101,7 +101,7 @@ function TargetStrip({ entry, mode, unit }) {
     {timed && <span className="unit">{t('sec')}</span>}
     {!timed && tgt.weight > 0 && <>
       <span className="op">@</span>
-      <span className={'gt ' + state}>{fmtNum(tgt.weight)}</span>
+      <button className={'gt ' + state} onClick={() => plateSheet(tgt.weight)} aria-label={t('On the bar')}>{fmtNum(tgt.weight)}</button>
       <span className="unit">{unit}</span>
     </>}
     <span className={'state ' + state}>{label}</span>
@@ -166,6 +166,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       {best > 0 && <span className="tag nocap">{t('Best:')} {fmtNum(best)} {S.unit}</span>}
     </div>
     {last && <div className="small dim" style={{ marginBottom: 4 }}>{t('Last time')} ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>}
+    {(S.exNotes || {})[entry.id] && <div className="exnote" style={{ marginTop: 8 }}>{S.exNotes[entry.id]}</div>}
     {plan && plan.why && plan.kind !== 'off' && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}>
       <Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} />
       <span>{t(...plan.why)}</span>

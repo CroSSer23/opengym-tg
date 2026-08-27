@@ -5,8 +5,9 @@ import { EXIDX } from '../lib/exercises.js'
 import { lastBW, streakWeeks, setLabel, modeOf, effortOf } from '../lib/history.js'
 import { fmtNum, fmtDate, fmtVol, todayISO, weekKey } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
-import { bwSheet, goalSheet, calendarSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor } from '../sheets.jsx'
+import { bwSheet, goalSheet, calendarSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor, measureSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
+import { siteName, lengthUnit, latest, delta, measuredSites, chartPoints } from '../lib/measures.js'
 import Heatmap from '../components/Heatmap.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
@@ -130,6 +131,52 @@ function EffortCard({ S }) {
 }
 
 // Stats = the analytics hub: all charts, progress and history live here.
+/**
+ * Measurements, next to body weight because that is the number they exist to correct. A good
+ * month can hold the scale flat while the waist comes down and the arms go up, and a tracker
+ * that only knows one of those tells its user they wasted the month.
+ *
+ * Sites with nothing logged stay out of the way until they are measured — nine empty rows is
+ * a chore list, not a record.
+ */
+function MeasurementsCard({ S }) {
+  const measured = measuredSites(S)
+  const [pick, setPick] = useState(null)
+  const lu = lengthUnit(S.unit)
+  const shown = pick || measured[0] || null
+
+  return <div className="card">
+    <div className="row between" style={{ marginBottom: 8 }}>
+      <h2 style={{ margin: 0 }}>{t('Measurements')}</h2>
+      <Button size="sm" icon="plus" onClick={() => measureSheet()}>{t('Log')}</Button>
+    </div>
+    {!measured.length ? (
+      <div className="muted small" style={{ lineHeight: 1.5 }}>
+        {t('Nothing measured yet. A tape around the waist once a month says things the scale cannot.')}
+      </div>
+    ) : <>
+      <div className="sect-b" style={{ marginBottom: 10 }}>
+        {measured.map(k => {
+          const last = latest(S, k)
+          const d = delta(S, k)
+          return <button key={k} className={'lrow tap' + (k === shown ? ' on' : '')} onClick={() => setPick(k)}>
+            <span className="lrow-m">
+              <span className="lrow-t">{t(siteName(k))}</span>
+              <span className="lrow-s">{fmtDate(last.d, true)}</span>
+            </span>
+            {d !== null && <span className="small" style={{ color: d === 0 ? 'var(--label-3)' : 'var(--label-2)', marginRight: 8 }}>
+              {d > 0 ? '+' : ''}{fmtNum(d)}
+            </span>}
+            <span className="lrow-v">{fmtNum(last.v)} {lu}</span>
+          </button>
+        })}
+      </div>
+      {shown && chartPoints(S, shown).length > 1 &&
+        <div className="chart"><LineChart points={chartPoints(S, shown)} h={140} unit={lu} color="var(--teal)" /></div>}
+    </>}
+  </div>
+}
+
 export default function Stats() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -226,6 +273,8 @@ export default function Stats() {
           options={[{ value: 30, label: '1M' }, { value: 90, label: '3M' }, { value: 365, label: '1Y' }, { value: 0, label: t('All') }]} />
         <div className="chart"><LineChart points={bwPts} h={160} unit={S.unit} goal={S.targetW} /></div>
       </div>
+
+      <MeasurementsCard S={S} />
 
       <div className="card">
         <h2>{t('Exercise progress')}</h2>

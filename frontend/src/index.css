@@ -276,6 +276,12 @@ button,.chip,.tile,.item,.wday,.cal-d,.swatch,.hm-c,.lrow,.seg button,.stp butto
   border-bottom:var(--hair) solid var(--sep);
 }
 .tgt .gt{font-size:31px;padding-bottom:2px}
+/* The prescribed weight doubles as the way into the plate calculator. It stays a figure -
+   a control chrome around it would fight the one thing the strip is for - so the only
+   affordance is the underline, and only where a pointer can hover. */
+button.gt{padding:0;background:none;border:0;font:inherit;cursor:pointer}
+@media (hover:hover){ button.gt:hover{ text-decoration:underline; text-underline-offset:6px; text-decoration-thickness:1.5px } }
+button.gt:active{opacity:.6}
 .tgt .op{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--label-3)}
 .tgt>.unit{align-self:center}
 .tgt .state{margin-left:auto;align-self:center;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
@@ -382,6 +388,8 @@ h4.sec{
   content:'';position:absolute;left:0;right:0;top:0;height:var(--hair);background:var(--sep);
 }
 .lrow.tap:active{background:var(--surface-2)}
+.lrow.on .lrow-t{color:var(--acc-text);font-weight:600}
+.lrow.on .lrow-v{color:var(--acc-text)}
 /* The glyph rail. Tinted-square icons were the other half of the iOS tell, so
    these are drawn on the page in the tint itself - a mark in the margin. */
 .lrow-i{

@@ -80,6 +80,10 @@ as a home-screen app, passkey sign-in, offline support, sync across your phone a
 - 🔗 **Supersets** — build them, and log them back-to-back with a rest only after the pair
 - ⏱️ **Timed exercises** — planks, hangs, wall sits and loaded carries are logged by time, not reps, with a work timer that counts the set itself (separate from the rest timer) and logs the time you actually held. They can carry weight too
 - 📈 **Progression that follows a rule** — pick one per routine, override it per exercise: linear, **Greyskull LP** (AMRAP top set, double jumps, 10 % resets), double progression through a rep range, or adding time. Your weights are already right when the session opens, and every target says *why* it's that number. Missed reps never advance the load, stalls trigger a deload, and bodyweight exercises progress in reps instead
+- 📐 **5/3/1** — percentage programming off a training max, as a fifth progression rule. Four-week cycle, three work sets a session at their own loads, the top set taken for as many reps as you have, and the training max going up once the cycle is done. Weights round down, because a percentage is a ceiling; the cycle position is derived from your log rather than stored, so correcting a mistyped session moves the cycle with it
+- 📏 **Body measurements** — waist, arms, chest and six more sites alongside body weight, each with its own trend. Sparse on purpose: nobody measures nine places every week, and a form that demands all of them collects guesses
+- 🧮 **Plate calculator** — tap a prescribed weight and it says what goes on each side, for your bar. It tells you when a number cannot be loaded instead of quietly rounding it
+- 📝 **Per-exercise notes** — a cue, a setup, a niggle to watch. Kept on the exercise rather than the routine, so it follows the lift everywhere it appears
 - 💪 **Estimated 1RM** — per exercise, from your best eligible set (it names which one), with its own progress curve and a calculator for sets you haven't done. Won't guess above 12 reps
 - 🎯 **Effort per set, in your scale** — an optional third column rating how hard a set was, as **RIR** (reps left in the tank) or **RPE** (the same judgement on a 10-point scale). Off by default; each set keeps the scale it was logged with, and nothing else reads the value — your progression and 1RM are unaffected
 - 🏃 **Cardio** — log time + speed, not just weight × reps
@@ -190,13 +194,13 @@ Rough, community-driven — ideas and PRs welcome:
 - [x] Standalone mobile app — Android APK to sideload ([download](https://opengym.duarte-santos.ch)); on iOS as a self-hosted PWA (no store listings planned)
 - [x] Automatic progression programs (linear, Greyskull LP, double progression) with stalls and deloads
 - [x] Estimated 1RM per exercise
-- [ ] Percentage / training-max programming (5/3/1-style) on top of the progression engine
+- [x] Percentage / training-max programming (5/3/1-style) on top of the progression engine
 - [x] AI Coach — plan design and feedback-driven plan reviews, from a CLI agent running on your own server
-- [ ] More starter plans (upper/lower, full-body, 5×5)
+- [x] More starter plans (upper/lower, full-body, 5×5)
 - [x] Importers from FitNotes / Strong / Hevy (including the RPE they record), and body weight from Apple Health
 - [x] Effort per set — RIR or RPE, whichever scale you think in
-- [ ] Body measurements (waist, arms…) alongside weight
-- [ ] Per-exercise notes & plate calculator
+- [x] Body measurements (waist, arms…) alongside weight
+- [x] Per-exercise notes & plate calculator
 - [ ] Exercise instructions in German & Portuguese (UI is translated; upstream dataset doesn't ship these yet)
 
 ## Tech
