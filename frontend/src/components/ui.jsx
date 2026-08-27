@@ -15,6 +15,8 @@
 
 import { useRef, useState, useEffect, useCallback, forwardRef } from 'react'
 import Icon from './Icon.jsx'
+import { t } from '../lib/i18n.js'
+import { unitLabel } from '../lib/format.js'
 
 /* ============================ text ============================ */
 
@@ -66,7 +68,7 @@ export function SearchField({ value, onChange, onClear, ...rest }) {
       <Icon name="magnifier" className="lead" />
       <input className="field" value={value} onChange={onChange} {...rest} />
       {!!value && (
-        <button className="clear" onClick={onClear} aria-label="Clear">
+        <button className="clear" onClick={onClear} aria-label={t('Clear')}>
           <Icon name="xmark" />
         </button>
       )}
@@ -119,12 +121,12 @@ export function Stepper({ value, step = 1, onChange, decimal = true, className =
   const set = v => onChange(Math.max(0, Math.round((v || 0) * 100) / 100))
   const inner = (
     <div className={'stp ' + className}>
-      <button onClick={() => set((+value || 0) - step)} aria-label="Decrease"><Icon name="minus" /></button>
+      <button onClick={() => set((+value || 0) - step)} aria-label={t('Decrease')}><Icon name="minus" /></button>
       <span className="val">
         <NumberField value={value} decimal={decimal} onChange={onChange} />
-        {unit && <i>{unit}</i>}
+        {unit && <i>{unitLabel(unit)}</i>}
       </span>
-      <button onClick={() => set((+value || 0) + step)} aria-label="Increase"><Icon name="plus" /></button>
+      <button onClick={() => set((+value || 0) + step)} aria-label={t('Increase')}><Icon name="plus" /></button>
     </div>
   )
   if (!label) return inner

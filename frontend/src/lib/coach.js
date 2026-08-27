@@ -262,7 +262,7 @@ const CHANGE_APPLY = {
   'swap-exercise': (s, c) => {
     const r = need(findRoutine(s, c.target.routineId))
     const i = r.ex.findIndex(e => e.id === c.target.exId)
-    if (i < 0) throw new Error('missing exercise')
+    if (i < 0) throw new Error(t('missing exercise'))
     const old = r.ex[i], a = c.after || {}
     // Keep the old prescription unless the Coach deliberately changed it: a swap is about the
     // movement, and silently resetting sets and reps would be a second change nobody approved.
@@ -284,17 +284,17 @@ const CHANGE_APPLY = {
     const r = need(findRoutine(s, c.target.routineId))
     const by = new Map(r.ex.map(e => [e.id, e]))
     const next = c.after.map(id => by.get(id)).filter(Boolean)
-    if (next.length !== r.ex.length) throw new Error('incomplete reorder')
+    if (next.length !== r.ex.length) throw new Error(t('incomplete reorder'))
     r.ex = next
     cleanupSg(r.ex)
   },
   superset: (s, c) => {
     const r = need(findRoutine(s, c.target.routineId))
     const i = r.ex.findIndex(e => e.id === c.target.exId)
-    if (i < 0) throw new Error('missing exercise')
+    if (i < 0) throw new Error(t('missing exercise'))
     if (!c.after?.link) { delete r.ex[i].sg; cleanupSg(r.ex); return }
     const j = r.ex.findIndex(e => e.id === c.after.with)
-    if (j < 0) throw new Error('missing partner')
+    if (j < 0) throw new Error(t('missing partner'))
     // Supersets are a property of adjacency in this app; move the partner next to it first.
     const [partner] = r.ex.splice(j, 1)
     const at = r.ex.findIndex(e => e.id === c.target.exId)
@@ -331,7 +331,7 @@ const CHANGE_APPLY = {
 export const CHANGE_TYPES = Object.keys(CHANGE_APPLY)
 
 function findExIn(s, c) { return findEx(findRoutine(s, c.target.routineId), c.target.exId) }
-function need(x) { if (!x) throw new Error('missing target'); return x }
+function need(x) { if (!x) throw new Error(t('missing target')); return x }
 
 /**
  * Apply the accepted subset, atomically (FR-30).

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { fmtVol, isoOf, todayISO, MONTHS } from '../lib/format.js'
-import { t } from '../lib/i18n.js'
+import { fmtVol, fmtUnit, isoOf, todayISO, MONTHS } from '../lib/format.js'
+import { t, tn } from '../lib/i18n.js'
 
 // GitHub-style activity heatmap, shaded by time trained per day.
 export default function Heatmap({ S, onDay }) {
@@ -37,7 +37,7 @@ export default function Heatmap({ S, onDay }) {
       const a = agg[key]
       const cls = 'hm-c l' + level(a) + (key === todayISO() ? ' today' : '') + (day > today ? ' future' : '')
       cells.push(<div key={d} className={cls}
-        title={key + (a ? ` · ${t(a.n === 1 ? '{0} workout' : '{0} workouts', a.n)} · ${a.min} min · ${fmtVol(a.vol, S.unit)}` : '')}
+        title={key + (a ? ` · ${tn(a.n, '{0} workout', '{0} workouts')} · ${fmtUnit(a.min, 'minute')} · ${fmtVol(a.vol, S.unit)}` : '')}
         onClick={a ? () => onDay(key) : undefined} />)
     }
     cols.push(<div key={wk} className="hm-col">{cells}</div>)

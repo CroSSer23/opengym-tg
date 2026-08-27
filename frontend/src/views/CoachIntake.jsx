@@ -145,7 +145,7 @@ export default function CoachIntake() {
         <div className="muted small" style={{ marginBottom: 10 }}>{t('Pick everything you have access to. Leave it empty and the Coach will use the whole library.')}</div>
         <div className="row" style={{ flexWrap: 'wrap', gap: 7 }}>
           {EQUIPMENT.map(e => <button key={e} className={'chip' + (p.equipment.includes(e) ? ' on' : '')}
-            onClick={() => toggleEq(e)} style={{ textTransform: 'capitalize' }}>{e}</button>)}
+            onClick={() => toggleEq(e)} style={{ textTransform: 'capitalize' }}>{t(e)}</button>)}
         </div>
       </>}
 

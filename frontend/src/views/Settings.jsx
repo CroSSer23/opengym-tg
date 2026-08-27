@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ACCENTS, fmtNum, todayISO, localTZ } from '../lib/format.js'
+import { ACCENTS, fmtNum, unitLabel, todayISO, localTZ } from '../lib/format.js'
 import { effortOf } from '../lib/history.js'
 import { api, webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
@@ -47,7 +47,7 @@ export default function Settings() {
     rd.onload = () => {
       try {
         const data = JSON.parse(rd.result)
-        if (!data.workouts || !data.routines) throw new Error('not an openGym backup')
+        if (!data.workouts || !data.routines) throw new Error(t('not an openGym backup'))
         confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => { replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), data), true); toast(t('Backup imported')) } })
       } catch (e) { toast(t('Import failed: {0}', e.message)) }
     }
@@ -115,7 +115,7 @@ export default function Settings() {
       />
       <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
         <Segmented className="seg-inline"
-          options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
+          options={[{ value: 'kg', label: unitLabel('kg') }, { value: 'lb', label: unitLabel('lb') }]}
           value={S.unit} onChange={v => update(s => { s.unit = v })} />
       </Row>
     </Section>
@@ -123,7 +123,7 @@ export default function Settings() {
     {/* ---------- during a workout ---------- */}
     <Section title={t('Equipment')} footer={t('Used by the plate calculator, which opens when you tap a prescribed weight during a workout.')}>
       <Row icon="barbell" iconTint="var(--label-3)" title={t('Bar weight')}
-        subtitle={t('Standard is {0} {1}.', fmtNum(DEFAULT_BAR[S.unit] || 20), S.unit)}>
+        subtitle={t('Standard is {0} {1}.', fmtNum(DEFAULT_BAR[S.unit] || 20), unitLabel(S.unit))}>
         <input className="num" type="number" min="0" max="100" step="0.5" style={{ width: 74 }}
           defaultValue={S.bar || DEFAULT_BAR[S.unit] || 20}
           onBlur={e => update(s => { const v = Math.max(0, +e.target.value || 0); s.bar = v === (DEFAULT_BAR[s.unit] || 20) ? null : v })} />
@@ -223,7 +223,7 @@ export default function Settings() {
 
     <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
       openGym · {t('free & open source (AGPL v3)')}<br />
-      <a href="https://github.com/DuarteSantos8/openGym" target="_blank" rel="noopener">source code</a> · exercise data: hasaneyldrm/exercises-dataset (CC)
+      <a href="https://github.com/DuarteSantos8/openGym" target="_blank" rel="noopener">{t('source code')}</a> · exercise data: hasaneyldrm/exercises-dataset (CC)
     </div>
   </div>
 }

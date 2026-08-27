@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
+import { fmtUnit } from '../lib/format.js'
 
 const clock = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0')
 
@@ -45,8 +46,8 @@ export default function RestTimer() {
         <div className="bar"><i style={{ width: pct + '%' }} /></div>
       </div>
       <div className="acts">
-        <Button size="sm" icon="minus" onClick={() => addRest(-15)}>15s</Button>
-        <Button size="sm" icon="plus" onClick={() => addRest(15)}>15s</Button>
+        <Button size="sm" icon="minus" onClick={() => addRest(-15)}>{fmtUnit(15, 'second', 'narrow')}</Button>
+        <Button size="sm" icon="plus" onClick={() => addRest(15)}>{fmtUnit(15, 'second', 'narrow')}</Button>
         <Button size="sm" variant="primary" className="skip" onClick={stopRest}>{t('Skip')}</Button>
       </div>
     </div>

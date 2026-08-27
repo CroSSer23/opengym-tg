@@ -28,7 +28,9 @@ for (const file of files) {
     console.error(`${file}: no default-exported object`)
     process.exit(1)
   }
-  locales.set(file.replace(/\.js$/, ''), new Set(Object.keys(dict)))
+  // "<key>#few" / "#many" are extra plural forms for languages whose grammar has them
+  // (see tn() in src/lib/i18n.js). They are deliberately not carried by every locale.
+  locales.set(file.replace(/\.js$/, ''), new Set(Object.keys(dict).filter(k => !k.includes('#'))))
 }
 
 // How many locales carry each key — 1 means the key was added to a single file only,

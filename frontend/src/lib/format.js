@@ -1,5 +1,5 @@
 // Formatting + date helpers (ported from the vanilla app, unit taken from the store where needed).
-import { dateLocale, t } from './i18n.js'
+import { dateLocale, t, tn } from './i18n.js'
 export const todayISO = () => {
   const d = new Date()
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
@@ -19,11 +19,11 @@ export function fmtDate(iso, long) {
 // Duration abbreviations follow the UI language like the dates and numbers above. A hardcoded
 // 'min' was the last English word left in a Ukrainian workout list, and Intl already knows the
 // abbreviation for every locale shipped here, so there is nothing for a translator to keep.
-const durUnit = (n, unit) =>
-  new Intl.NumberFormat(dateLocale(), { style: 'unit', unit, unitDisplay: 'short' }).format(n)
+export const fmtUnit = (n, unit, display = 'short') =>
+  new Intl.NumberFormat(dateLocale(), { style: 'unit', unit, unitDisplay: display }).format(n)
 export function fmtDur(ms) {
   const m = Math.floor(ms / 60000)
-  return m >= 60 ? durUnit(Math.floor(m / 60), 'hour') + ' ' + durUnit(m % 60, 'minute') : durUnit(m, 'minute')
+  return m >= 60 ? fmtUnit(Math.floor(m / 60), 'hour') + ' ' + fmtUnit(m % 60, 'minute') : fmtUnit(m, 'minute')
 }
 // Imported history has no clock — an unknown duration is left out rather than shown as "0 min".
 export const durPart = ms => (ms >= 60000 ? [fmtDur(ms)] : [])
@@ -37,9 +37,23 @@ export const fmtPlate = n => Number(n).toLocaleString(dateLocale(), { maximumFra
 // Volume stays in the profile's unit throughout: the old shorthand turned anything over
 // 10 000 into "t", which is wrong for a pound profile and made one list mix "18.8t" with
 // "7'535 kg" — two numbers you can't compare at a glance.
-export const fmtVol = (v, unit) => fmtNum(v) + ' ' + unit
+// The unit a profile logs in is stored as 'kg' or 'lb' and shown as whatever the reader's
+// language calls it - a Ukrainian log reads 77,5 кг. Intl carries the abbreviation, so this
+// is one more thing translators never have to keep.
+const UNIT_OF = { kg: 'kilogram', lb: 'pound', cm: 'centimeter', in: 'inch' }
+const unitCache = new Map()
+export function unitLabel(u) {
+  if (!UNIT_OF[u]) return u
+  const key = dateLocale() + ' ' + u
+  if (!unitCache.has(key)) {
+    const parts = new Intl.NumberFormat(dateLocale(), { style: 'unit', unit: UNIT_OF[u], unitDisplay: 'short' }).formatToParts(1)
+    unitCache.set(key, parts.filter(p => p.type === 'unit').map(p => p.value).join(''))
+  }
+  return unitCache.get(key)
+}
+export const fmtVol = (v, unit) => fmtNum(v) + ' ' + unitLabel(unit)
 // Plural forms are not automatic when the English string is the key.
-export const exCount = n => t(n === 1 ? '{0} exercise' : '{0} exercises', n)
+export const exCount = n => tn(n, '{0} exercise', '{0} exercises')
 
 export function weekKey(d) {
   const dt = new Date(d + 'T12:00:00')

@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, streakWeeks, lastBW, setsDoneActive } from '../lib/history.js'
-import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
-import { t, dateLocale } from '../lib/i18n.js'
+import { fmtNum, fmtDate, unitLabel, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
+import { t, tn, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
@@ -32,7 +32,7 @@ function CoachCard({ nav }) {
         <div className="ttl">{ready
           ? (pending.kind === 'create'
             ? t('Your plan is ready')
-            : t(pending.changes?.length === 1 ? '{0} suggestion for you' : '{0} suggestions for you', pending.changes?.length || 0))
+            : tn(pending.changes?.length || 0, '{0} suggestion for you', '{0} suggestions for you'))
           : t('Reading your training…')}</div>
       </div>
     </div>
@@ -87,9 +87,9 @@ export default function Home() {
         calendar, and a calendar is a thing you read, not a thing that arrived. */}
     <div className="wk">
       <div className="wk-h">
-        <button className="iconbtn sm" onClick={() => setWeekOffset(w => w - 1)} aria-label="Previous week"><Icon name="chevronLeft" /></button>
+        <button className="iconbtn sm" onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
         <div className="lbl">{wkLabel}</div>
-        <button className="iconbtn sm" onClick={() => setWeekOffset(w => w + 1)} aria-label="Next week"><Icon name="chevronRight" /></button>
+        <button className="iconbtn sm" onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
       </div>
       <div className="week">{strip}</div>
     </div>
@@ -138,7 +138,7 @@ export default function Home() {
             annotation on the reading. */}
         <div className="bw-hero">
           <span className="v">{fmtNum(bw.w)}</span>
-          <span className="unit">{S.unit}</span>
+          <span className="unit">{unitLabel(S.unit)}</span>
           {/* only when it actually moved — an unchanged weight used to read as "− 0" */}
           {!!delta && (
             <span className="delta" style={{ color: bwDeltaColor(delta, bw.w) }}>
@@ -151,7 +151,7 @@ export default function Home() {
         {S.targetW && (
           <div className="small row" style={{ color: 'var(--yellow)', marginTop: 2, gap: 5 }}>
             <Icon name="target" style={{ fontSize: 13 }} />
-            <span>{t('Goal')} {fmtNum(S.targetW)} {S.unit} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached!') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + S.unit)}</span>
+            <span>{t('Goal')} {fmtNum(S.targetW)} {unitLabel(S.unit)} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached!') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + unitLabel(S.unit))}</span>
           </div>
         )}
         <div className="chart" style={{ marginTop: 10 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>
@@ -165,7 +165,7 @@ export default function Home() {
           <span className="lrow-i" style={{ '--tint': 'var(--orange)' }}><Icon name="flame" /></span>
           <span className="lrow-m">
             <span className="lrow-t">{t('{0} week streak', streakWeeks(S))}</span>
-            <span className="lrow-s">{wThisWeek}{plannedPerWeek ? ' / ' + plannedPerWeek : ''} {t('this week')} · {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', S.workouts.length)}</span>
+            <span className="lrow-s">{wThisWeek}{plannedPerWeek ? ' / ' + plannedPerWeek : ''} {t('this week')} · {tn(S.workouts.length, '{0} workout total', '{0} workouts total')}</span>
           </span>
           <Icon name="calendar" className="lrow-c" />
         </button>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { t } from '../lib/i18n.js'
+import { t, tn } from '../lib/i18n.js'
 import { fmtDate } from '../lib/format.js'
 import { DEMO } from '../lib/demo.js'
 import { MOBILE } from '../lib/mobile.js'
@@ -219,7 +219,7 @@ function StatusCard({ job, pending, nav }) {
           <div className="lbl2">{pending.kind === 'create' ? t('Your plan is ready') : t('Suggestions ready')}</div>
           <div className="ttl">{pending.kind === 'create'
             ? t('{0} routines to look over', pending.bundle?.routines?.length || 0)
-            : t(pending.changes?.length === 1 ? '{0} suggestion' : '{0} suggestions', pending.changes?.length || 0)}</div>
+            : tn(pending.changes?.length || 0, '{0} suggestion', '{0} suggestions')}</div>
         </div>
       </div>
       <span className="tag acc">{t('Review')}</span>

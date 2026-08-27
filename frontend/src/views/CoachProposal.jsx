@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { t } from '../lib/i18n.js'
+import { t, tn } from '../lib/i18n.js'
 import { fmtDate } from '../lib/format.js'
 import { exLine } from '../lib/history.js'
 import { loadOfRoutine } from '../lib/muscles.js'
@@ -143,7 +143,7 @@ function ChangeSet({ p, S, update, toast, nav }) {
     try {
       update(s => { applyChangeSet(s, marked, ids) })
       resolvePending({ accepted: ids, rejected: marked.changes.filter(c => !ids.includes(c.id)).map(c => c.id) }).catch(() => {})
-      toast(t(ids.length === 1 ? '{0} change applied' : '{0} changes applied', ids.length))
+      toast(tn(ids.length, '{0} change applied', '{0} changes applied'))
       nav('/plan')
     } catch (e) { toast(e.message || t('Could not apply those changes')) }
   }
@@ -206,7 +206,7 @@ function ChangeSet({ p, S, update, toast, nav }) {
     </div>}
 
     <Button variant="primary" icon="check" onClick={apply}>
-      {accepted.size ? t(accepted.size === 1 ? 'Apply {0} change' : 'Apply {0} changes', accepted.size) : t('Apply nothing')}
+      {accepted.size ? tn(accepted.size, 'Apply {0} change', 'Apply {0} changes') : t('Apply nothing')}
     </Button>
     <div style={{ height: 8 }} />
     <Button danger onClick={discard}>{t('Dismiss all')}</Button>

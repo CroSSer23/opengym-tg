@@ -38,6 +38,21 @@ export function t(s, ...args) {
   for (let i = 0; i < args.length; i++) v = v.replaceAll('{' + i + '}', args[i])
   return v
 }
+// Plural categories are not the same everywhere: English has two forms, Ukrainian, Russian
+// and Polish have three, and French counts zero as singular. Intl knows every rule; the
+// forms English has no word for live in the locale files under "<plural key>#few" and
+// "#many", so a language that does not need them simply does not carry the entry.
+let rules = null
+function pluralRules() {
+  if (!rules || rules.lang !== lang) rules = { lang, r: new Intl.PluralRules(dateLocale()) }
+  return rules.r
+}
+export function tn(n, one, other) {
+  const cat = pluralRules().select(n)
+  if (cat === 'one') return t(one, n)
+  const variant = other + '#' + cat
+  return t(dict[variant] === undefined ? other : variant, n)
+}
 // Instructions for an exercise in the current language (English steps as fallback).
 export const instrFor = ex => (instr && instr[ex.id]) || ex.st || []
 

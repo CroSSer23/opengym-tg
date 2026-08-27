@@ -22,6 +22,11 @@ function sourceStrings() {
       else if (/\.jsx?$/.test(f.name) && !/\.test\./.test(f.name)) {
         const s = fs.readFileSync(p, 'utf8')
         for (const m of s.matchAll(/\bt\(\s*'((?:[^'\\]|\\.)*)'/g)) found.add(m[1].replace(/\\'/g, "'"))
+        // tn(count, singular, plural) picks its key at runtime, so both forms are read here
+        // too — otherwise converting a call site to tn() would quietly drop it from this check.
+        for (const m of s.matchAll(/\btn\(\s*[^,]+,\s*'((?:[^'\\]|\\.)*)'\s*,\s*'((?:[^'\\]|\\.)*)'/g)) {
+          found.add(m[1].replace(/\\'/g, "'")); found.add(m[2].replace(/\\'/g, "'"))
+        }
         for (const m of s.matchAll(/\bt\(\s*"((?:[^"\\]|\\.)*)"/g)) found.add(m[1].replace(/\\"/g, '"'))
       }
     }

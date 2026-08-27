@@ -10,7 +10,7 @@
 
 import { EXIDX } from './exercises.js'
 import { modeOf, fmtSec } from './history.js'
-import { uid, todayISO, DAYN, fmtNum, exCount } from './format.js'
+import { uid, todayISO, DAYN, fmtNum, fmtUnit, unitLabel, exCount } from './format.js'
 import { t } from './i18n.js'
 
 const PLAN_FMT = 1
@@ -141,11 +141,11 @@ function scheme(e, unit) {
   const sets = e.sets || 1
   const mode = modeOf(e)
   if (mode === 'cardio') {
-    const body = `${e.min || 20} min @ ${fmtNum(e.speed || 8)} km/h`
+    const body = `${fmtUnit(e.min || 20, 'minute')} @ ${fmtUnit(e.speed || 8, 'kilometer-per-hour')}`
     return sets > 1 ? `${sets} × ${body}` : body
   }
   let s = mode === 'time' ? `${sets} × ${fmtSec(e.sec || 45)}` : `${sets} × ${e.reps ?? 10}`
-  if (e.weight) s += ` · ${fmtNum(e.weight)} ${unit}`
+  if (e.weight) s += ` · ${fmtNum(e.weight)} ${unitLabel(unit)}`
   return s
 }
 

@@ -9,6 +9,7 @@
 // resolves to nothing renders as a blank row the first time it is trained, which is a
 // miserable way to find out.
 import { uid } from './format.js'
+import { t } from './i18n.js'
 
 // [ id, sets, reps ]
 const PPL = [
@@ -85,7 +86,9 @@ export const STARTER_PLANS = [
 export function planRoutines(plan) {
   return plan.spec.map(([name, emoji, list]) => ({
     id: uid(),
-    name,
+    // Named in the reader's language at the moment they are created; they are ordinary user
+    // data from then on, so a later language switch leaves them alone.
+    name: t(name),
     emoji,
     ...(plan.prog ? { prog: plan.prog } : {}),
     ex: list.map(([id, sets, reps]) => ({ id, sets, reps, weight: 0 }))

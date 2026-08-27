@@ -1,6 +1,7 @@
 // Web Push subscribe/unsubscribe — requires a signed-in profile (subscriptions are stored
 // server-side per user, same as everything else under /api).
 import { api } from './api.js'
+import { t } from './i18n.js'
 
 export const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 export const pushPermission = () => (pushSupported() ? Notification.permission : 'unsupported')
@@ -12,9 +13,9 @@ const urlBase64ToUint8Array = b64 => {
 }
 
 export async function enablePush() {
-  if (!pushSupported()) throw new Error('Push notifications are not supported in this browser')
+  if (!pushSupported()) throw new Error(t('Push notifications are not supported in this browser'))
   const perm = await Notification.requestPermission()
-  if (perm !== 'granted') throw new Error('Notifications permission was not granted')
+  if (perm !== 'granted') throw new Error(t('Notifications permission was not granted'))
   const reg = await navigator.serviceWorker.ready
   const { key } = await api('/api/push/public-key')
   const subscription = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) })

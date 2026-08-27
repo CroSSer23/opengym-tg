@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { fmtNum, fmtDate, MONTHS, isoOf } from '../lib/format.js'
+import { fmtNum, fmtDate, unitLabel, MONTHS, isoOf } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 
 const W = 340   // viewBox width; the svg stretches to its container, height comes from `h`
@@ -132,7 +132,7 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--a
         </g>}
       </svg>
       {hover && <div className="ctip" ref={tipRef}>
-        {fmtDate(hover.iso, true)} · {fmtNum(hover.v)}{unit ? ' ' + unit : ''}{hover.note ? ' · ' + hover.note : ''}
+        {fmtDate(hover.iso, true)} · {fmtNum(hover.v)}{unit ? ' ' + unitLabel(unit) : ''}{hover.note ? ' · ' + hover.note : ''}
       </div>}
     </div>
   )
