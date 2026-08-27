@@ -157,3 +157,36 @@ describe('Ukrainian', () => {
     expect(russianOnly).toBeLessThan(20)
   })
 })
+
+describe('the translate helpers are imported wherever they are called', () => {
+  // Admin.jsx once called t() in an aria-label without importing it. Nothing caught that: the
+  // scan above only reads the string out of the source, the bundler is happy to emit a free
+  // identifier, and no test renders a view — so the whole dashboard threw ReferenceError on
+  // first paint and only the error boundary knew. This is the cheap guard for that: a call
+  // without its import, anywhere.
+  const offenders = []
+  const walk = d => {
+    for (const f of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, f.name)
+      if (f.isDirectory()) { if (!/locales|instr|names|fonts/.test(f.name)) walk(p); continue }
+      if (!/\.jsx?$/.test(f.name) || /\.test\./.test(f.name)) continue
+      const s = fs.readFileSync(p, 'utf8')
+      // The import line lists what it brings in; a call site is the bare name before a paren.
+      const imported = new Set()
+      for (const m of s.matchAll(/import\s*\{([^}]*)\}\s*from\s*'[^']*i18n\.js'/g)) {
+        for (const name of m[1].split(',')) imported.add(name.trim().split(/\s+as\s+/).pop())
+      }
+      for (const fn of ['t', 'tn']) {
+        const called = new RegExp('(^|[^\\w.$])' + fn + '\\(').test(s)
+        // i18n.js itself declares them rather than importing them, and so may anything else.
+        const declared = new RegExp('(function|const|let|var)\\s+' + fn + '\\b').test(s)
+        if (called && !imported.has(fn) && !declared) offenders.push(path.relative(SRC, p) + ' calls ' + fn + '()')
+      }
+    }
+  }
+
+  it('has no view calling t() or tn() it never imported', () => {
+    walk(SRC)
+    expect(offenders).toEqual([])
+  })
+})

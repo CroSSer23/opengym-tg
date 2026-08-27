@@ -6,13 +6,15 @@ import { api } from '../lib/api.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur } from '../lib/format.js'
 import { workoutVolume, setsDone } from '../lib/history.js'
 import { confirmSheet } from '../sheets.jsx'
+import { t } from '../lib/i18n.js'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import AdminCoach from './AdminCoach.jsx'
 
 // Admin-only operator dashboard (owner passkey + admin flag; guarded again server-side).
-// Deliberately English-only — it isn't part of the translated end-user surface, so it stays
-// out of the per-language string packs.
+// The body copy here is English: it is the operator's surface, not the end-user one, so it
+// stays out of the per-language string packs. The controls a screen reader announces are the
+// exception — those go through t() like everywhere else, which is why this file imports it.
 
 const rel = ts => {
   if (!ts) return 'never'
