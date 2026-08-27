@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   readSession, sessionsFor, stallCount, nextPrescription, applyPrescription,
   policyFor, defaultIncrement, POLICIES_FOR, DELOAD_AFTER
-} from './progression.js'
+, targetOf, setMeetsTarget, targetState } from './progression.js'
 import { EXDB } from './exercises.js'
 
 const LIFT = EXDB.find(e => e.bp !== 'cardio' && !['upper legs', 'lower legs', 'back', 'hips', 'glutes'].includes(e.bp)).id
@@ -389,5 +389,58 @@ describe('applyPrescription', () => {
   it('adjusts a timed set without inventing a weight', () => {
     const timed = [{ sec: 45, w: 0, done: false }]
     expect(applyPrescription(timed, { kind: 'up', sec: 50 })).toEqual([{ sec: 50, w: 0, done: false }])
+  })
+})
+
+/* ---------------- the target readout ---------------- */
+
+describe('targetOf', () => {
+  it('lays this session\u2019s prescription over the routine\u2019s configuration', () => {
+    const entry = { target: { sets: 3, reps: 8, weight: 60 }, plan: { kind: 'up', weight: 62.5 }, sets: [{}, {}, {}] }
+    expect(targetOf(entry)).toMatchObject({ sets: 3, reps: 8, weight: 62.5 })
+  })
+  it('falls back to the configuration when no policy ran', () => {
+    expect(targetOf({ target: { sets: 3, reps: 10, weight: 40 }, plan: { kind: 'off' } })).toMatchObject({ reps: 10, weight: 40 })
+  })
+  it('counts the sets actually on screen when the configuration does not say', () => {
+    expect(targetOf({ target: { reps: 5 }, sets: [{}, {}] }).sets).toBe(2)
+  })
+})
+
+describe('setMeetsTarget', () => {
+  it('is unanswered until the set is checked off', () => {
+    expect(setMeetsTarget({ r: 10, done: false }, 10)).toBe(null)
+  })
+  it('reads reps against the goal, and short is short', () => {
+    expect(setMeetsTarget({ r: 10, done: true }, 10)).toBe(true)
+    expect(setMeetsTarget({ r: 11, done: true }, 10)).toBe(true)
+    expect(setMeetsTarget({ r: 9, done: true }, 10)).toBe(false)
+  })
+  it('reads a hold in seconds', () => {
+    expect(setMeetsTarget({ sec: 45, done: true }, 45, 'time')).toBe(true)
+    expect(setMeetsTarget({ sec: 38, done: true }, 45, 'time')).toBe(false)
+  })
+  it('cannot be missed when nothing was asked', () => {
+    expect(setMeetsTarget({ r: 0, done: true }, 0)).toBe(true)
+  })
+})
+
+describe('targetState', () => {
+  const hit = { r: 10, done: true }, short = { r: 8, done: true }, todo = { r: 10, done: false }
+  it('is pending until something lands', () => {
+    expect(targetState([todo, todo, todo], 10, 'reps', 3)).toBe('pending')
+  })
+  it('is partial while the landed sets are still landing', () => {
+    expect(targetState([hit, todo, todo], 10, 'reps', 3)).toBe('partial')
+  })
+  it('is hit only once every prescribed set is in', () => {
+    expect(targetState([hit, hit, hit], 10, 'reps', 3)).toBe('hit')
+  })
+  it('does not call it hit when sets were dropped from the prescription', () => {
+    expect(targetState([hit, hit], 10, 'reps', 3)).toBe('partial')
+  })
+  it('makes a miss stick, because a later good set does not undo an earlier short one', () => {
+    expect(targetState([short, hit, hit], 10, 'reps', 3)).toBe('miss')
+    expect(targetState([hit, short, todo], 10, 'reps', 3)).toBe('miss')
   })
 })

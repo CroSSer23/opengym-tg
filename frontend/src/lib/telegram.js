@@ -169,7 +169,8 @@ export function haptic(kind = 'light') {
 
 /* ------------------------------ theme + viewport ------------------------------ */
 
-export const themeParams = () => json(LAUNCH.tgWebAppThemeParams, {}) || {}
+let THEME = null
+export const themeParams = () => (THEME ||= json(LAUNCH.tgWebAppThemeParams, {}) || {})
 export const colorScheme = () => {
   const bg = themeParams().bg_color
   if (!bg) return null
@@ -208,11 +209,15 @@ function publishInsets(prefix, inset) {
 if (IN_TELEGRAM) {
   document.documentElement.dataset.tg = platform || 'unknown'
   publishTheme(themeParams())
-  on('theme_changed', d => publishTheme(d?.theme_params))
+  on('theme_changed', d => { THEME = d?.theme_params || THEME; publishTheme(THEME); for (const fn of themeSubs) fn() })
   on('viewport_changed', d => publishViewport(d?.height, d?.is_stable ? d.height : null))
   on('content_safe_area_changed', d => publishInsets('content-safe', d))
   on('safe_area_changed', d => publishInsets('safe', d))
 }
+
+/** Told when the viewer flips Telegram's own light/dark switch while the app is open. */
+const themeSubs = new Set()
+export function onThemeChanged(fn) { themeSubs.add(fn); return () => themeSubs.delete(fn) }
 
 /** Everything the app needs to know in one object, for the store. */
 export const telegramContext = () => ({

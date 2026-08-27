@@ -1,57 +1,111 @@
 /* ============================================================================
-   openGym — design system
+   openGym - design system: "The Log"
    ----------------------------------------------------------------------------
-   Rebuilt around four rules, each aimed at a specific "generated" tell in the
-   previous sheet:
+   What this replaces was, deliberately and well, an iOS system app: Apple's
+   palette, Apple's grouped inset lists, Apple's controls, Apple's type stack.
+   That is real design work, and it is also exactly why the app read as a
+   platform default rather than as itself.
 
-   1. ONE TYPE SCALE, MOSTLY REGULAR WEIGHT. The old sheet set font-weight 700/800
-      on nearly every element, which flattens hierarchy — when everything shouts,
-      position is the only cue left. Here weight carries meaning: 600 for a title,
-      400 for its content, and size does the rest.
-   2. A NEUTRAL SURFACE RAMP. Cards are near-neutral greys a few points apart, not
-      saturated blue-greys. Colour is spent only on the accent and on status.
-   3. HAIRLINES, NOT BORDERS. Separators are sub-pixel and inset past the icon
-      rail, so a list reads as one object instead of a stack of outlined boxes.
-   4. MOTION THAT ACKNOWLEDGES, NOT ANIMATES. Presses scale ~2%, transitions run
-      140–220ms on an ease-out curve. Nothing bounces or slides for decoration.
+   The subject here is not fitness. It is a RECORD. The whole argument for
+   openGym is "your data, your server", so the language is a measuring
+   instrument and a training ledger, not a lifestyle app.
+
+   Four rules carry it:
+
+   1. THE NUMBER IS THE SUBJECT. Weight, reps, effort and time are what a lifter
+      is actually reading, one-handed and out of breath. They are set in the
+      display face at display sizes, and everything else drops a tier to make
+      room for them.
+   2. RULES, NOT CARDS. Content sits on the page, separated by hairlines that
+      run to the edge. A filled, rounded container is reserved for things
+      genuinely raised off the page: a live workout, a pending proposal, a sheet.
+   3. COLOUR IS INFORMATION. The neutral ramp is actually neutral, so the accent
+      is the only chromatic thing on screen and colour always means something.
+      All eight accents and both themes survive - they are a shipped feature.
+   4. MOTION ACKNOWLEDGES. Kept from the sheet before this one, because it was
+      right: 140-220ms, ease-out, about 2% on press. Two additions, both earning
+      their place - a target filling as a set lands, and a staggered enter on
+      the set list.
    ========================================================================== */
+
+/* ----------------------------------------------------------------- fonts -- */
+/* Self-hosted rather than linked from a CDN: openGym is an offline-capable PWA
+   that promises no cloud dependencies, and a blocking third-party font request
+   on every load would break both claims. Variable weight axes only, subsetted
+   by Google's own unicode-ranges, so a Latin-only reader never downloads the
+   Cyrillic and a Cyrillic reader never downloads Vietnamese. Both faces are
+   SIL OFL; the licences ship beside them in src/fonts/.
+
+   Unbounded  - display, and every figure. Wide, geometric, mechanical: it
+                reads as a readout rather than as a headline, which is the
+                whole point of rule 1.
+   Golos Text - interface and prose. Drawn for UI, with Cyrillic that is native
+                rather than bolted on - which matters for an app translated into
+                Russian and read in Ukraine. */
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 900;font-display:swap;src:url('./fonts/unbounded-cyrillic-ext.woff2') format('woff2');unicode-range:U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 900;font-display:swap;src:url('./fonts/unbounded-cyrillic.woff2') format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 900;font-display:swap;src:url('./fonts/unbounded-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 900;font-display:swap;src:url('./fonts/unbounded-latin.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 900;font-display:swap;src:url('./fonts/golos-text-cyrillic-ext.woff2') format('woff2');unicode-range:U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F}
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 900;font-display:swap;src:url('./fonts/golos-text-cyrillic.woff2') format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 900;font-display:swap;src:url('./fonts/golos-text-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 900;font-display:swap;src:url('./fonts/golos-text-latin.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 
 /* ---------------------------------------------------------------- tokens -- */
 :root {
-  /* surfaces — dark is the default */
-  --bg:        #000000;
-  --bg-el:     #0e0e10;   /* elevated backdrop (sheets, bars) */
-  --surface:   #1c1c1e;   /* card / grouped-list fill */
-  --surface-2: #2c2c2e;   /* pressed + nested fill */
-  --surface-3: #3a3a3c;   /* controls (segmented track, switch off) */
+  /* The app is translated into Chinese, Korean and Hindi, and neither webfont
+     covers those. They fall through to the platform's own faces on purpose: no
+     font we could ship would beat them, and shipping one would cost every user
+     the bytes. */
+  --font-display:'Unbounded',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-text:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+
+  /* surfaces - dark is the default.
+     Not pure #000: it flattens every cue of depth, and on OLED the step up to a
+     lifted surface reads as a seam. Near-black carrying a trace of green keeps
+     the instrument temperature without ever becoming a colour. */
+  --bg:        #0a0b0b;
+  --bg-el:     #101212;   /* elevated backdrop (sheets, bars) */
+  --surface:   #161818;   /* raised container */
+  --surface-2: #1e2121;   /* pressed + nested fill */
+  --surface-3: #2a2d2d;   /* controls (segmented track, switch off) */
 
   /* text */
-  --label:     #ffffff;
-  --label-2:   rgba(235,235,245,.60);
-  --label-3:   rgba(235,235,245,.32);
-  --label-4:   rgba(235,235,245,.18);
+  --label:     #f2f4f3;
+  --label-2:   rgba(242,244,243,.60);
+  --label-3:   rgba(242,244,243,.34);
+  --label-4:   rgba(242,244,243,.15);
 
-  /* lines */
-  --sep:       rgba(84,84,88,.60);
-  --sep-op:    rgba(84,84,88,.34);   /* for edges sitting over blur */
-  --hair:      .5px;
+  /* rules. A ledger's line is meant to be seen, so this is a real pixel at low
+     alpha rather than the old sub-pixel hairline, which vanished at 1x. */
+  --sep:       rgba(242,244,243,.13);
+  --sep-op:    rgba(242,244,243,.09);   /* for edges sitting over blur */
+  --hair:      1px;
 
-  /* system palette (iOS dark values) */
-  --blue:#0a84ff; --green:#30d158; --red:#ff453a; --orange:#ff9f0a;
-  --yellow:#ffd60a; --teal:#40c8e0; --indigo:#5e5ce6; --pink:#ff375f;
-  --purple:#bf5af2; --mint:#63e6e2; --brown:#ac8e68; --grey:#8e8e93;
+  /* palette. Deeper and flatter than the system set it replaces: these are
+     signal colours on a neutral ground, not a UI kit. */
+  --blue:#3d9bff; --green:#3fd964; --red:#ff5347; --orange:#ff9526;
+  --yellow:#ffcc26; --teal:#2ecbdd; --indigo:#6d6cf5; --pink:#ff4d7d;
+  --purple:#b46bff; --mint:#4fe0c8; --brown:#b08a63; --grey:#8a8f8e;
 
-  /* accent (per-account, synced) */
+  /* accent (per-account, synced).
+     Two tokens, because one hex cannot do both jobs: --acc is a fill with a
+     label on top of it, --acc-text is the accent used AS text. In dark mode
+     they are the same colour, since every accent already clears 4.5:1 on this
+     background. In light mode they are not - see below. */
   --acc:  var(--green);
-  --acc-2:#248a3d;
+  --acc-text: var(--acc);
+  --acc-2:#2fb54f;
   --on-acc:#000000;
-  --acc-soft: color-mix(in srgb, var(--acc) 16%, transparent);
-  --acc-line: color-mix(in srgb, var(--acc) 38%, transparent);
+  --acc-soft: color-mix(in srgb, var(--acc) 15%, transparent);
+  --acc-line: color-mix(in srgb, var(--acc) 34%, transparent);
 
-  /* geometry */
-  --r-sm:8px; --r:12px; --r-lg:16px; --r-xl:22px; --r-card:14px;
-  --pad:16px;
-  --icon-stroke:1.7;
+  /* geometry. ONE radius system, written down so it stays one:
+     containers 8, controls 6, anything that toggles is a full pill, and the
+     start button is a circle. Nothing else invents a corner. */
+  --r-sm:6px; --r:8px; --r-lg:12px; --r-xl:16px; --r-card:8px;
+  --pad:18px;
+  --icon-stroke:1.6;
 
   /* motion */
   --ease:cubic-bezier(.32,.72,0,1);
@@ -62,48 +116,57 @@
 }
 
 :root[data-theme="light"] {
-  --bg:        #f2f2f7;
-  --bg-el:     #f7f7fa;
+  --bg:        #f4f4f2;
+  --bg-el:     #fafaf9;
   --surface:   #ffffff;
-  --surface-2: #ececef;
-  --surface-3: #e3e3e8;
+  --surface-2: #eeeeec;
+  --surface-3: #e4e4e1;
 
-  --label:     #000000;
-  --label-2:   rgba(60,60,67,.60);
-  --label-3:   rgba(60,60,67,.30);
-  --label-4:   rgba(60,60,67,.16);
+  --label:     #131514;
+  --label-2:   rgba(19,21,20,.62);
+  --label-3:   rgba(19,21,20,.36);
+  --label-4:   rgba(19,21,20,.16);
 
-  --sep:       rgba(60,60,67,.29);
-  --sep-op:    rgba(60,60,67,.20);
+  --sep:       rgba(19,21,20,.14);
+  --sep-op:    rgba(19,21,20,.10);
 
-  --blue:#007aff; --green:#34c759; --red:#ff3b30; --orange:#ff9500;
-  --yellow:#ffcc00; --teal:#30b0c7; --indigo:#5856d6; --pink:#ff2d55;
-  --purple:#af52de; --mint:#00c7be; --brown:#a2845e; --grey:#8e8e93;
-  --acc-2:#248a3d;
+  --blue:#0b6ee0; --green:#17a34a; --red:#dc2a1f; --orange:#c26a05;
+  --yellow:#96700a; --teal:#0d8fa6; --indigo:#4f46e5; --pink:#d81f5c;
+  --purple:#8b2fd6; --mint:#0d9488; --brown:#92643f; --grey:#6b7280;
+  --acc-2:#12813a;
   --on-acc:#ffffff;
 }
 
-/* accents — Apple's system colours, so a recolour never looks off-system */
-:root[data-accent="lime"]  { --acc:var(--green);  --acc-2:#248a3d; --on-acc:#000 }
-:root[data-accent="sky"]   { --acc:var(--blue);   --acc-2:#0060df; --on-acc:#fff }
-:root[data-accent="orange"]{ --acc:var(--orange); --acc-2:#c76b00; --on-acc:#000 }
-:root[data-accent="violet"]{ --acc:var(--purple); --acc-2:#8944ab; --on-acc:#fff }
-:root[data-accent="pink"]  { --acc:var(--pink);   --acc-2:#d70036; --on-acc:#fff }
-:root[data-accent="red"]   { --acc:var(--red);    --acc-2:#d70015; --on-acc:#fff }
-:root[data-accent="teal"]  { --acc:var(--teal);   --acc-2:#0071a4; --on-acc:#000 }
-:root[data-accent="gold"]  { --acc:var(--yellow); --acc-2:#b25000; --on-acc:#000 }
-/* Label colour on a filled accent button is picked per accent by measured contrast,
-   not by taste. Button text is 17px/600, so the AA bar is 3:1 (large text). White on
-   the light-theme green is 2.22:1 and on teal 2.57:1 — both fail, and green is the
-   DEFAULT accent, so every primary button in light mode was failing. Black scores
-   9.46 / 8.16 there. Blue, purple, pink and red keep white (3.5–4.1:1), which both
-   passes and matches the platform convention. */
-:root[data-theme="light"][data-accent="lime"],
-:root[data-theme="light"][data-accent="teal"]  { --on-acc:#000 }
-:root[data-theme="light"][data-accent="sky"],
-:root[data-theme="light"][data-accent="violet"],
-:root[data-theme="light"][data-accent="pink"],
-:root[data-theme="light"][data-accent="red"]   { --on-acc:#fff }
+/* accents.
+   Every value below is measured, not chosen by eye. Two separate bars have to
+   be cleared and they pull in opposite directions:
+
+     · as a FILL with a 17px/600 label on it, the label needs 4.5:1. (Not 3:1 -
+       WCAG "large text" starts at 18.66px bold, and this is 17px semibold. The
+       sheet this replaces assumed the looser bar.) Both --on-acc values below
+       clear 4.5:1 for every accent in both themes.
+     · as TEXT on the page background - links, ghost buttons, .accent - the
+       accent itself needs 4.5:1. In dark mode the fill colour already does
+       (6.1:1 at worst). In light mode none of them do, which is why light mode
+       carries a separately darkened --acc-text. Same hue, same saturation,
+       enough value removed to land at 4.5:1 and no more. */
+:root[data-accent="lime"]  { --acc:var(--green);  --acc-2:#2fb54f; --on-acc:#000 }
+:root[data-accent="sky"]   { --acc:var(--blue);   --acc-2:#2b7fd6; --on-acc:#000 }
+:root[data-accent="orange"]{ --acc:var(--orange); --acc-2:#d97a12; --on-acc:#000 }
+:root[data-accent="violet"]{ --acc:var(--purple); --acc-2:#9752d9; --on-acc:#000 }
+:root[data-accent="pink"]  { --acc:var(--pink);   --acc-2:#d93c68; --on-acc:#000 }
+:root[data-accent="red"]   { --acc:var(--red);    --acc-2:#d9463c; --on-acc:#000 }
+:root[data-accent="teal"]  { --acc:var(--teal);   --acc-2:#24a8b8; --on-acc:#000 }
+:root[data-accent="gold"]  { --acc:var(--yellow); --acc-2:#d9ad20; --on-acc:#000 }
+
+:root[data-theme="light"][data-accent="lime"]  { --acc-2:#12813a; --on-acc:#000; --acc-text:#12813a }
+:root[data-theme="light"][data-accent="sky"]   { --acc-2:#0a5cba; --on-acc:#fff; --acc-text:#0b6cdc }
+:root[data-theme="light"][data-accent="orange"]{ --acc-2:#a95c04; --on-acc:#000; --acc-text:#a95c04 }
+:root[data-theme="light"][data-accent="violet"]{ --acc-2:#7526b5; --on-acc:#fff; --acc-text:#8b2fd6 }
+:root[data-theme="light"][data-accent="pink"]  { --acc-2:#b81a4e; --on-acc:#fff; --acc-text:#d61f5b }
+:root[data-theme="light"][data-accent="red"]   { --acc-2:#b8231a; --on-acc:#fff; --acc-text:#d5291e }
+:root[data-theme="light"][data-accent="teal"]  { --acc-2:#0b7a8d; --on-acc:#000; --acc-text:#0b7a8d }
+:root[data-theme="light"][data-accent="gold"]  { --acc-2:#7d5d08; --on-acc:#000; --acc-text:#8d6909 }
 
 /* ---------------------------------------------------------------- reset -- */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -113,19 +176,22 @@ html{
 }
 body{
   background:var(--bg);color:var(--label);
-  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Segoe UI',Roboto,system-ui,sans-serif;
-  font-size:17px;line-height:1.29;letter-spacing:-.01em;
+  font-family:var(--font-text);
+  font-size:16px;line-height:1.4;letter-spacing:-.004em;
   min-height:100vh;overscroll-behavior-y:none;overflow-x:clip;
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   touch-action:manipulation;
+  /* Every number in this app sits in a column that is read down, or ticks once
+     a second. Proportional figures make both jitter. */
   font-variant-numeric:tabular-nums;
+  font-feature-settings:'tnum' 1;
 }
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;letter-spacing:inherit}
 input,select,textarea{font:inherit;color:var(--label);letter-spacing:inherit}
 img{max-width:100%}
-a{color:var(--acc);text-decoration:none}
+a{color:var(--acc-text);text-decoration:none}
 :focus{outline:none}
-:focus-visible{outline:2.5px solid var(--acc);outline-offset:2px;border-radius:6px}
+:focus-visible{outline:2.5px solid var(--acc);outline-offset:2px;border-radius:4px}
 button,.chip,.tile,.item,.wday,.cal-d,.swatch,.hm-c,.lrow,.seg button,.stp button,.sld
 {-webkit-user-select:none;user-select:none}
 
@@ -139,26 +205,83 @@ button,.chip,.tile,.item,.wday,.cal-d,.swatch,.hm-c,.lrow,.seg button,.stp butto
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 
 /* ------------------------------------------------------------ type scale -- */
-.t-large  {font-size:34px;line-height:1.06;font-weight:700;letter-spacing:-.028em}
-.t-title  {font-size:28px;line-height:1.12;font-weight:700;letter-spacing:-.024em}
-.t-title2 {font-size:22px;line-height:1.18;font-weight:700;letter-spacing:-.021em}
-.t-head   {font-size:17px;line-height:1.29;font-weight:600;letter-spacing:-.012em}
-.t-body   {font-size:17px;line-height:1.29;font-weight:400;letter-spacing:-.012em}
-.t-callout{font-size:16px;line-height:1.31;font-weight:400;letter-spacing:-.009em}
-.t-sub    {font-size:15px;line-height:1.33;font-weight:400;letter-spacing:-.006em}
-.t-foot   {font-size:13px;line-height:1.38;font-weight:400;letter-spacing:-.001em}
-.t-cap    {font-size:12px;line-height:1.33;font-weight:400;letter-spacing:0}
+/* Two faces, three roles. Display for anything that is a figure or a title,
+   text for everything a sentence is made of, and one small tracked-caps role
+   for units and column heads - set in the text face, not a third family.
+   Display sizes are smaller than the numbers they replace because Unbounded is
+   a wide face: 30px of it occupies more line than 34px of a system grotesk. */
+.t-large  {font-family:var(--font-display);font-size:29px;line-height:1.06;font-weight:700;letter-spacing:-.03em}
+.t-title  {font-family:var(--font-display);font-size:23px;line-height:1.12;font-weight:700;letter-spacing:-.028em}
+.t-title2 {font-family:var(--font-display);font-size:19px;line-height:1.18;font-weight:600;letter-spacing:-.024em}
+.t-head   {font-size:16px;line-height:1.3;font-weight:600;letter-spacing:-.008em}
+.t-body   {font-size:16px;line-height:1.4;font-weight:400;letter-spacing:-.004em}
+.t-callout{font-size:15px;line-height:1.4;font-weight:400}
+.t-sub    {font-size:14px;line-height:1.4;font-weight:400}
+.t-foot   {font-size:13px;line-height:1.42;font-weight:400}
+.t-cap    {font-size:12px;line-height:1.35;font-weight:400}
+
+/* A measurement. Anything the lifter is reading a value off. */
+.fig{
+  font-family:var(--font-display);font-weight:700;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;line-height:1;
+}
+/* Units and column heads: the only uppercase in the app, and always small. */
+.unit{
+  font-family:var(--font-text);font-size:11px;font-weight:600;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--label-2);
+}
 
 .muted{color:var(--label-2)} .dim{color:var(--label-3)}
-.small{font-size:13px;line-height:1.38}
-.accent{color:var(--acc)}
+.small{font-size:13px;line-height:1.42}
+.accent{color:var(--acc-text)}
 .capitalize{text-transform:capitalize}
 /* exercise names and body-part/equipment terms arrive lowercase from the dataset,
    so tags and chips capitalise by default. Anything that is a unit or a sentence opts
-   back out — blanket-capitalising turned "60 kg" into "60 Kg" and a whole hint into
+   back out - blanket-capitalising turned "60 kg" into "60 Kg" and a whole hint into
    Title Case. The compound selectors are needed: .tag/.chip come later in this file
    and would otherwise win on source order. */
 .nocap,.tag.nocap,.chip.nocap{text-transform:none}
+
+/* ------------------------------------------------------------ the target -- */
+/* The one device this design is built around.
+   Every prescribed set is a number the app asked for; the logged set is the
+   number that was actually made. The target is drawn as an outline and landing
+   on it fills the outline in - so "did I make it" is answered by whether a
+   figure is solid, before any of it is read. The same shape appears in the
+   workout, on the plan, and in a Coach proposal's before/after, so one glance
+   means the same thing in all three.
+
+   -webkit-text-stroke is the only way to stroke text without duplicating the
+   node. It is prefixed in every engine and implemented in all of them,
+   including Firefox; where it is somehow missing the figure simply renders
+   solid, which is a legible fallback rather than an invisible one. */
+.gt{
+  font-family:var(--font-display);font-weight:700;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;line-height:1.14;
+  color:transparent;-webkit-text-stroke:1.4px var(--label-3);
+  transition:color var(--med) var(--ease),-webkit-text-stroke-color var(--med) var(--ease);
+}
+@supports not (-webkit-text-stroke: 1px red){ .gt{color:var(--label-3)} }
+.gt.hit{color:var(--acc);-webkit-text-stroke-color:transparent}
+.gt.miss{color:transparent;-webkit-text-stroke-color:var(--orange)}
+/* Sets are landing and none has come up short yet: the outline picks up the accent
+   before it fills, so progress is visible mid-exercise rather than only at the end. */
+.gt.partial{-webkit-text-stroke-color:var(--acc)}
+
+/* The strip itself: the biggest thing on the workout screen, because it is the only
+   thing worth reading from arm's length with a bar in your hands. */
+.tgt{
+  display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
+  margin:14px 0 0;padding-bottom:13px;
+  border-bottom:var(--hair) solid var(--sep);
+}
+.tgt .gt{font-size:31px;padding-bottom:2px}
+.tgt .op{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--label-3)}
+.tgt>.unit{align-self:center}
+.tgt .state{margin-left:auto;align-self:center;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
+.tgt .state.hit{color:var(--acc-text)}
+.tgt .state.miss{color:var(--orange)}
+.tgt .state.pending,.tgt .state.partial{color:var(--label-3)}
 
 /* ---------------------------------------------------------------- layout -- */
 #app{
@@ -166,32 +289,38 @@ button,.chip,.tile,.item,.wday,.cal-d,.swatch,.hm-c,.lrow,.seg button,.stp butto
   max-width:560px;margin:0 auto;
 }
 /* while the rest timer floats above the tab bar, keep its height scrollable-past
-   (the rest variant is two rows tall — ~44px more than the single-row work timer) */
+   (the rest variant is two rows tall - ~44px more than the single-row work timer) */
 body.resting #app{padding-bottom:calc(250px + var(--sab))}
 @keyframes viewfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 #app.vfade{animation:viewfade var(--med) var(--ease)}
 
-/* large title, the way a nav bar does it */
-.hdr{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:8px 0 18px}
-.hdr h1{font-size:34px;line-height:1.06;font-weight:700;letter-spacing:-.028em}
-.hdr .sub{color:var(--label-2);font-size:15px;letter-spacing:-.006em;margin-top:4px}
+/* large title, sitting on a rule the way a ledger's heading does */
+.hdr{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  margin:8px 0 18px;padding-bottom:14px;border-bottom:var(--hair) solid var(--sep);
+}
+.hdr h1{font-family:var(--font-display);font-size:27px;line-height:1.06;font-weight:700;letter-spacing:-.032em}
+.hdr .sub{color:var(--label-2);font-size:14px;margin-top:5px}
 
 .iconbtn{
-  width:36px;height:36px;border-radius:50%;flex:none;
+  width:36px;height:36px;border-radius:var(--r);flex:none;
   background:var(--surface);color:var(--label);
   display:flex;align-items:center;justify-content:center;font-size:18px;
+  border:var(--hair) solid var(--sep-op);
   transition:background var(--fast),transform var(--fast);
 }
 .iconbtn:active{background:var(--surface-2);transform:scale(.92)}
-.iconbtn.on-ss{background:var(--acc-soft);color:var(--acc)}
+.iconbtn.on-ss{background:var(--acc-soft);color:var(--acc-text);border-color:var(--acc-line)}
 
+/* section heads are column heads: small, tracked, quiet, and never competing
+   with the figures underneath them */
 h4.sec{
-  font-size:13px;font-weight:400;letter-spacing:-.004em;color:var(--label-2);
-  text-transform:none;margin:22px 0 8px;padding:0 4px;
+  font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--label-3);margin:26px 0 9px;padding:0;
 }
 .card h2{
-  font-size:13px;font-weight:400;letter-spacing:-.004em;color:var(--label-2);
-  text-transform:none;margin:0 0 12px;
+  font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--label-3);margin:0 0 12px;
 }
 .divider{height:var(--hair);background:var(--sep);margin:14px 0;border:0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -199,41 +328,74 @@ h4.sec{
 .row.between{justify-content:space-between}
 
 /* ----------------------------------------------------------------- card -- */
-.card{
-  background:var(--surface);border-radius:var(--r-card);
-  padding:16px;margin-bottom:12px;
-}
-.card .big{font-size:30px;font-weight:600;letter-spacing:-.026em;line-height:1.1}
+/* Rule 2, and the single change that converts the whole app at once.
+   A .card used to be a filled, rounded tile floating on a tinted page - roughly
+   sixty of them across the views. Most were not raised off anything; they were
+   just how a section got drawn. So the default became a ruled panel: no fill,
+   no corner, one rule under it, and the sections stack into a continuous ledger.
 
-/* ------------------------------------------------------ inset group list -- */
-.sect{margin-bottom:22px}
-.sect-t{
-  font-size:13px;font-weight:400;color:var(--label-2);
-  letter-spacing:-.004em;padding:0 4px 7px;display:block;
+   .card.raised is the opt-back-in, and it is deliberately hard to justify. It
+   means "this arrived and wants an answer": a live session, a pending Coach
+   proposal, a sheet. */
+.card{
+  background:none;border:0;border-radius:0;
+  border-bottom:var(--hair) solid var(--sep);
+  padding:18px 0;margin-bottom:0;
 }
-.sect-b{background:var(--surface);border-radius:var(--r-card);overflow:hidden}
-.sect-f{font-size:13px;color:var(--label-2);padding:7px 4px 0;line-height:1.38}
+.card:last-child{border-bottom:0}
+.card.raised{
+  background:var(--surface);border:var(--hair) solid var(--sep-op);
+  border-radius:var(--r-card);padding:16px;margin-bottom:12px;
+}
+.card .big{font-family:var(--font-display);font-size:27px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
+/* ------------------------------------------------------ inset group list -- */
+/* Rule 2 in practice. This was an iOS grouped inset list: a filled, rounded
+   card floating on a tinted page. It is the single most recognisable Apple
+   shape there is, and while it was here the app could not read as anything but
+   an iOS app wearing a different colour.
+
+   What replaces it is a ledger: rows on the page itself, bounded top and bottom
+   by a rule, separated by rules. Nothing is lost - the grouping still reads,
+   because a rule groups just as well as a box - and the page stops looking
+   borrowed. */
+.sect{margin-bottom:26px}
+.sect-t{
+  font-size:11px;font-weight:600;color:var(--label-3);
+  letter-spacing:.09em;text-transform:uppercase;padding:0 0 8px;display:block;
+}
+.sect-b{
+  background:none;border-radius:0;overflow:visible;
+  border-top:var(--hair) solid var(--sep);
+  border-bottom:var(--hair) solid var(--sep);
+}
+.sect-f{font-size:13px;color:var(--label-2);padding:9px 0 0;line-height:1.42}
 
 .lrow{
-  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
-  padding:11px 14px;min-height:46px;position:relative;color:var(--label);
+  display:flex;align-items:center;gap:13px;width:100%;text-align:left;
+  padding:12px 2px;min-height:48px;position:relative;color:var(--label);
   background:none;
 }
-/* hairline starts after the icon rail so the list reads as one object */
+/* The rule runs the full width of the list, not inset past the icon: on the
+   page rather than inside a box, an inset rule reads as a mistake instead of
+   as grouping. */
 .lrow+.lrow::before{
-  content:'';position:absolute;left:14px;right:0;top:0;height:var(--hair);background:var(--sep);
+  content:'';position:absolute;left:0;right:0;top:0;height:var(--hair);background:var(--sep);
 }
-.lrow:has(.lrow-i)+.lrow:has(.lrow-i)::before{left:55px}
 .lrow.tap:active{background:var(--surface-2)}
+/* The glyph rail. Tinted-square icons were the other half of the iOS tell, so
+   these are drawn on the page in the tint itself - a mark in the margin. */
 .lrow-i{
-  width:29px;height:29px;border-radius:7px;flex:none;font-size:18px;
+  width:26px;height:26px;flex:none;font-size:20px;
   display:flex;align-items:center;justify-content:center;
-  background:var(--tint,var(--acc));color:#fff;
+  background:none;color:var(--tint,var(--acc-text));--icon-stroke:1.7;
 }
-.lrow-m{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-.lrow-t{font-size:17px;letter-spacing:-.012em;line-height:1.25}
-.lrow-s{font-size:13px;color:var(--label-2);line-height:1.3}
-.lrow-v{color:var(--label-2);font-size:17px;letter-spacing:-.012em;flex:none}
+.lrow-m{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.lrow-t{font-size:16px;letter-spacing:-.006em;line-height:1.28}
+.lrow-s{font-size:13px;color:var(--label-2);line-height:1.32}
+.lrow-v{
+  font-family:var(--font-display);color:var(--label-2);font-size:14px;
+  font-weight:600;letter-spacing:-.02em;flex:none;
+}
 .lrow-c{color:var(--label);font-size:15px;flex:none;--icon-stroke:2.4}
 .lrow-k{color:var(--acc);font-size:17px;flex:none;--icon-stroke:2.4}
 .lrow.danger,.lrow.danger .lrow-t{color:var(--red)}
@@ -249,22 +411,22 @@ h4.sec{
 
 /* -------------------------------------------------------------- buttons -- */
 .btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;
-  padding:14px 18px;border-radius:var(--r);font-size:17px;font-weight:600;
-  letter-spacing:-.012em;background:var(--surface-2);color:var(--label);
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:14px 18px;border-radius:var(--r);font-size:15px;font-weight:600;
+  letter-spacing:.005em;background:var(--surface-2);color:var(--label);
   transition:transform var(--fast) var(--ease),background var(--fast),opacity var(--fast);
 }
 .btn .icn{font-size:19px}
 .btn:active{transform:scale(.975)}
 .btn.primary{background:var(--acc);color:var(--on-acc)}
 .btn.primary:active{background:var(--acc-2)}
-.btn.tinted{background:var(--acc-soft);color:var(--acc)}
+.btn.tinted{background:var(--acc-soft);color:var(--acc-text);box-shadow:inset 0 0 0 var(--hair) var(--acc-line)}
 .btn.danger{background:color-mix(in srgb,var(--red) 15%,transparent);color:var(--red)}
-.btn.ghost,.btn.plain{background:none;color:var(--acc);font-weight:400}
+.btn.ghost,.btn.plain{background:none;color:var(--acc-text);font-weight:500}
 .btn.ghost:active,.btn.plain:active{background:var(--surface-2)}
-.btn.sm{padding:8px 14px;width:auto;font-size:15px;border-radius:var(--r-sm);gap:5px}
+.btn.sm{padding:9px 14px;width:auto;font-size:14px;border-radius:var(--r-sm);gap:6px}
 .btn.sm .icn{font-size:16px}
-.btn.xs{padding:5px 10px;width:auto;font-size:13px;border-radius:7px;gap:4px}
+.btn.xs{padding:6px 10px;width:auto;font-size:12px;border-radius:var(--r-sm);gap:5px}
 .btn:disabled{opacity:.32;pointer-events:none}
 
 /* ----------------------------------------------------------- tab bar ----- */
@@ -276,11 +438,14 @@ h4.sec{
   backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);
   border-top:var(--hair) solid var(--sep-op);
 }
-:root[data-theme="light"] #tabbar{background:rgba(249,249,251,.78)}
+:root[data-theme="light"] #tabbar{background:rgba(250,250,249,.80)}
 #tabbar button{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
-  color:var(--label-3);font-size:10px;font-weight:500;letter-spacing:.005em;padding-top:3px;
+  flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;
+  color:var(--label-3);font-size:10px;font-weight:600;letter-spacing:.01em;padding-top:3px;
   transition:color var(--fast);
+}
+#tabbar button>span{
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 /* The inactive tint is semi-transparent, so wherever two strokes cross inside an
    icon (the calendar's hangers over its frame, the divider's caps on its sides)
@@ -316,45 +481,56 @@ h4.sec{
 /* ------------------------------------------------------------ week strip -- */
 .week{display:flex;justify-content:space-between;gap:4px}
 .wday{
-  flex:1;text-align:center;padding:8px 2px 9px;border-radius:10px;
+  flex:1;text-align:center;padding:8px 2px 9px;border-radius:var(--r-sm);
   background:none;border:none;transition:background var(--fast);
 }
-.wday .lbl{font-size:11px;color:var(--label-3);font-weight:500;text-transform:uppercase;letter-spacing:.03em}
-.wday .num{font-size:17px;font-weight:400;margin:4px 0;letter-spacing:-.012em}
+.wday .lbl{font-size:10px;color:var(--label-3);font-weight:600;text-transform:uppercase;letter-spacing:.09em}
+.wday .num{font-family:var(--font-display);font-size:15px;font-weight:600;margin:5px 0;letter-spacing:-.02em}
 .wday .dot{width:5px;height:5px;border-radius:50%;background:transparent;margin:0 auto}
 .wday .dot.plan{background:var(--label-3)}
 .wday .dot.ovr{background:var(--orange)}
 .wday .dot.done{background:var(--acc)}
 .wday:active{background:var(--surface-2)}
 .wday.today .num{
-  background:var(--acc);color:var(--on-acc);font-weight:600;
-  width:31px;height:31px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;margin:2px auto;
+  background:var(--acc);color:var(--on-acc);font-weight:700;
+  width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;margin:3px auto;
 }
 
 /* ----------------------------------------------------------------- list -- */
-.list{display:flex;flex-direction:column;gap:8px}
+/* The same argument as .card, one level down. A routine list was eight filled tiles with
+   eight gaps between them; as ruled rows it is one list, and the eye runs down it instead of
+   stopping at every border. The rules live on the list so the first and last are drawn once,
+   and on the rows so the ones between are drawn once each. */
+.list{
+  display:flex;flex-direction:column;gap:0;
+  border-top:var(--hair) solid var(--sep);
+  border-bottom:var(--hair) solid var(--sep);
+}
 .item{
-  display:flex;align-items:center;gap:12px;background:var(--surface);
-  border-radius:var(--r-card);padding:10px 12px;min-height:60px;
+  display:flex;align-items:center;gap:13px;background:none;
+  border-radius:0;border:0;
+  padding:11px 2px;min-height:58px;
   transition:background var(--fast);text-align:left;width:100%;
 }
+.item+.item{border-top:var(--hair) solid var(--sep)}
 .item:active{background:var(--surface-2)}
-.thumb{width:50px;height:50px;border-radius:9px;object-fit:cover;background:#fff;flex:none}
+.thumb{width:50px;height:50px;border-radius:var(--r-sm);object-fit:cover;background:#fff;flex:none}
 .thumb-x{
   display:flex;align-items:center;justify-content:center;font-size:21px;
   background:var(--surface-2);color:var(--label-2);
 }
-.item .tt{font-size:16px;font-weight:400;line-height:1.25;letter-spacing:-.009em}
-.item .ss{color:var(--label-2);font-size:13px;margin-top:2px}
+.item .tt{font-size:15px;font-weight:500;line-height:1.28;letter-spacing:-.004em}
+.item .ss{color:var(--label-2);font-size:13px;margin-top:3px}
 .item .grow{flex:1;min-width:0}
 .chev{color:var(--label);flex:none;font-size:15px;--icon-stroke:2.4}
 .tag{
-  display:inline-flex;align-items:center;gap:3px;background:var(--surface-2);
-  color:var(--label-2);border-radius:6px;padding:3px 7px;font-size:12px;
-  font-weight:500;text-transform:capitalize;
+  display:inline-flex;align-items:center;gap:3px;background:none;
+  box-shadow:inset 0 0 0 var(--hair) var(--sep);
+  color:var(--label-2);border-radius:var(--r-sm);padding:3px 7px;font-size:11px;
+  font-weight:600;letter-spacing:.02em;text-transform:capitalize;
 }
-.tag.acc{background:var(--acc-soft);color:var(--acc)}
+.tag.acc{background:var(--acc-soft);color:var(--acc-text);box-shadow:inset 0 0 0 var(--hair) var(--acc-line)}
 
 /* ---------------------------------------------------------------- chips -- */
 .chips{
@@ -363,12 +539,13 @@ h4.sec{
 }
 .chips::-webkit-scrollbar{display:none}
 .chip{
-  flex:none;padding:6px 13px;border-radius:99px;background:var(--surface);
-  font-size:14px;font-weight:400;color:var(--label);text-transform:capitalize;
-  letter-spacing:-.006em;transition:background var(--fast),color var(--fast);
+  flex:none;padding:6px 13px;border-radius:99px;background:none;
+  box-shadow:inset 0 0 0 var(--hair) var(--sep);
+  font-size:13px;font-weight:500;color:var(--label-2);text-transform:capitalize;
+  transition:background var(--fast),color var(--fast),box-shadow var(--fast);
 }
 .chip:active{background:var(--surface-2)}
-.chip.on{background:var(--acc);color:var(--on-acc);font-weight:500}
+.chip.on{background:var(--acc);color:var(--on-acc);font-weight:600;box-shadow:none}
 
 /* =========================== CONTROLS ==================================== */
 
@@ -392,7 +569,7 @@ h4.sec{
   position:absolute;left:11px;font-size:16px;color:var(--label-3);
   pointer-events:none;--icon-stroke:2.1;z-index:1;
 }
-.searchf .field{padding-left:35px;padding-right:36px;background:var(--surface-2);border-radius:10px}
+.searchf .field{padding-left:35px;padding-right:36px;background:var(--surface-2);border-radius:var(--r-sm)}
 :root[data-theme="light"] .searchf .field{background:rgba(118,118,128,.12)}
 .searchf .clear{
   position:absolute;right:8px;width:22px;height:22px;border-radius:50%;
@@ -401,7 +578,7 @@ h4.sec{
 }
 /* legacy .search wrapper */
 .search{position:relative}
-.search .input{padding-left:35px;background:var(--surface-2);border-radius:10px}
+.search .input{padding-left:35px;background:var(--surface-2);border-radius:var(--r-sm)}
 :root[data-theme="light"] .search .input{background:rgba(118,118,128,.12)}
 .search>svg{
   position:absolute;left:11px;top:50%;transform:translateY(-50%);z-index:1;
@@ -432,7 +609,7 @@ h4.sec{
    padding box, which is what the thumb needs. */
 .seg{
   position:relative;display:flex;
-  background:var(--surface-3);border-radius:9px;padding:2px;isolation:isolate;
+  background:var(--surface-3);border-radius:var(--r-sm);padding:2px;isolation:isolate;
 }
 .seg>button{flex:1 1 0;min-width:0}
 :root[data-theme="light"] .seg{background:rgba(118,118,128,.12)}
@@ -440,8 +617,8 @@ h4.sec{
   position:absolute;z-index:0;top:2px;bottom:2px;left:2px;
   width:calc((100% - 4px)/var(--n));
   transform:translateX(calc(100% * var(--i)));
-  background:var(--surface);border-radius:7px;
-  box-shadow:0 3px 8px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.06);
+  background:var(--surface);border-radius:4px;
+  box-shadow:0 2px 6px rgba(0,0,0,.14);
   transition:transform var(--med) var(--ease);
 }
 :root[data-theme="light"] .seg-sel{background:#fff}
@@ -461,7 +638,7 @@ h4.sec{
 
 /* native time input, restyled to sit in a row like a value label */
 .timef{
-  background:var(--surface-2);border:none;border-radius:8px;padding:6px 10px;
+  background:var(--surface-2);border:none;border-radius:var(--r-sm);padding:6px 10px;
   font-size:16px;color:var(--label);outline:none;font-variant-numeric:tabular-nums;
 }
 .timef::-webkit-calendar-picker-indicator{filter:invert(.5)}
@@ -469,10 +646,10 @@ h4.sec{
 
 /* --- stepper --- */
 .stp-w{display:flex;flex-direction:column;gap:6px;min-width:0}
-.stp-l{font-size:13px;color:var(--label-2);text-align:center}
+.stp-l{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--label-3);text-align:center}
 .stp{
   display:flex;align-items:center;background:var(--surface-2);
-  border-radius:10px;overflow:hidden;min-width:0;
+  border-radius:var(--r-sm);overflow:hidden;min-width:0;
 }
 .stp button{
   width:40px;height:44px;flex:none;color:var(--label);font-size:16px;
@@ -486,7 +663,7 @@ h4.sec{
 .stp .val i{font-style:normal;font-size:12px;color:var(--label-2);flex:none}
 .stp .num{
   width:100%;min-width:0;text-align:center;background:none;border:none;outline:none;
-  font-size:17px;font-weight:500;letter-spacing:-.012em;padding:0;
+  font-family:var(--font-display);font-size:16px;font-weight:700;letter-spacing:-.03em;padding:0;
   -moz-appearance:textfield;appearance:textfield;
 }
 .stp .num::-webkit-inner-spin-button{display:none}
@@ -543,8 +720,9 @@ h4.sec{
 .exmedia.mini img{height:84px}
 
 .sethead{
-  display:flex;align-items:center;gap:8px;padding:0 0 6px;
-  font-size:11px;color:var(--label-3);font-weight:500;text-transform:uppercase;letter-spacing:.045em;
+  display:flex;align-items:center;gap:8px;padding:0 0 7px;
+  margin-bottom:2px;border-bottom:var(--hair) solid var(--sep);
+  font-size:10px;color:var(--label-3);font-weight:600;text-transform:uppercase;letter-spacing:.1em;
 }
 .sethead .n-sp{width:24px;flex:none}
 .sethead .w-sp{flex:1.4;text-align:center}
@@ -553,12 +731,14 @@ h4.sec{
 .sethead .ck-sp{width:30px;flex:none}
 .setrow{display:flex;align-items:center;gap:8px;padding:7px 0;position:relative}
 .setrow+.setrow::before{
-  content:'';position:absolute;left:32px;right:0;top:0;height:var(--hair);background:var(--sep);
+  content:'';position:absolute;left:0;right:0;top:0;height:var(--hair);background:var(--sep);
 }
+/* The set index is a line number in a ledger, not a badge. */
 .setrow .n{
-  width:24px;height:24px;border-radius:50%;background:var(--surface-2);color:var(--label-2);
-  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex:none;
-  transition:background var(--fast),color var(--fast);
+  width:24px;height:24px;flex:none;background:none;color:var(--label-3);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:12px;font-weight:600;letter-spacing:-.02em;
+  transition:color var(--fast);
 }
 .setrow .stp.w{flex:1.4;min-width:0}
 .setrow .stp.r{flex:1;min-width:0}
@@ -576,12 +756,12 @@ h4.sec{
 .setrow.eff3 .stp button{width:23px}
 .setrow.eff3 .stp.eff button{width:20px}
 .setrow.eff3 .stp .num{font-size:14px}
-.setrow.done .n{background:var(--acc);color:var(--on-acc)}
+.setrow.done .n{background:none;color:var(--acc-text)}
 .setrow.done{opacity:.45}
 /* why the next target is what it is (issue #17) */
 .progline{
-  display:flex;align-items:flex-start;gap:7px;margin:6px 0 2px;
-  font-size:13px;line-height:1.38;color:var(--acc);
+  display:flex;align-items:flex-start;gap:7px;margin:7px 0 2px;
+  font-size:13px;line-height:1.42;color:var(--acc-text);
 }
 .progline.warn{color:var(--yellow)}
 .progline svg{flex:none;margin-top:2px}
@@ -590,7 +770,7 @@ h4.sec{
 .setrow .setgo{
   width:30px;height:30px;border-radius:50%;flex:none;
   display:flex;align-items:center;justify-content:center;
-  background:var(--surface-2);color:var(--acc);font-size:14px;
+  background:var(--surface-2);color:var(--acc-text);font-size:14px;
   transition:background var(--fast),opacity var(--fast);
 }
 .setrow .setgo:disabled{opacity:.3;cursor:default}
@@ -608,13 +788,13 @@ h4.sec{
      clock hard to pick out mid-set. The blur stays, so it still sits above the page. */
   background:color-mix(in srgb,var(--surface) 97%,transparent);
   backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);
-  border-radius:var(--r-lg);padding:12px 14px;
+  border-radius:var(--r-lg);padding:12px 14px;border:var(--hair) solid var(--sep-op);
   display:flex;align-items:center;gap:12px;
   box-shadow:0 12px 34px -8px rgba(0,0,0,.55);
   animation:slideup var(--med) var(--ease);
 }
 @keyframes slideup{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
-#timer .t{font-size:26px;font-weight:600;letter-spacing:-.026em;font-variant-numeric:tabular-nums;min-width:66px}
+#timer .t{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:-.035em;font-variant-numeric:tabular-nums;min-width:74px}
 #timer .bar{flex:1;height:4px;background:var(--surface-3);border-radius:99px;overflow:hidden}
 #timer .bar i{display:block;height:100%;background:var(--acc);transition:width 1s linear}
 /* rest variant: −15/+15/Skip and the clock won't share one line on a phone, so the clock and
@@ -628,7 +808,7 @@ h4.sec{
 /* work timer (issue #16): the same bar doing the opposite job — outlined and tinted so a
    glance tells "you are holding this" apart from "you are recovering". */
 #timer.working{border:var(--hair) solid var(--acc)}
-#timer.working .t{color:var(--acc)}
+#timer.working .t{color:var(--acc-text)}
 #timer.working .grow{flex:1;min-width:0}
 #timer.working .lbl{
   font-size:12px;color:var(--label-2);margin-bottom:5px;text-transform:capitalize;
@@ -654,7 +834,7 @@ h4.sec{
 :root[data-theme="light"] .sheet{background:var(--bg)}
 @keyframes sheetup{from{transform:translateY(100%)}to{transform:none}}
 .sheet .grab{width:36px;height:5px;border-radius:99px;background:var(--label-4);margin:6px auto 14px}
-.sheet h3{font-size:20px;font-weight:600;letter-spacing:-.021em;margin-bottom:14px}
+.sheet h3{font-family:var(--font-display);font-size:19px;font-weight:700;letter-spacing:-.026em;margin-bottom:16px}
 .center{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   width:min(84vw,300px);background:var(--bg-el);border-radius:var(--r-lg);padding:20px;
@@ -669,14 +849,14 @@ h4.sec{
    tabular columns you can read straight down, and the words take whatever is left. Built out
    of the same grouped-list parts as the rest of the app (surface fill, inset hairlines) rather
    than a real <table>, so it inherits the card look and wraps properly on a narrow phone. */
-.efftbl{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;margin:14px 0 12px}
+.efftbl{background:var(--surface);border-radius:var(--r-card);border:var(--hair) solid var(--sep-op);overflow:hidden;margin:14px 0 12px}
 .efftbl .r{display:flex;align-items:center;gap:10px;padding:10px 14px;position:relative}
 .efftbl .r+.r::before{
   content:'';position:absolute;left:14px;right:0;top:0;height:var(--hair);background:var(--sep);
 }
 .efftbl .n{
-  width:36px;flex:none;text-align:center;font-size:17px;font-weight:600;
-  letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+  width:36px;flex:none;text-align:center;font-family:var(--font-display);
+  font-size:16px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;
 }
 .efftbl .f{flex:1;min-width:0;font-size:15px;color:var(--label-2);line-height:1.3}
 /* the header names the columns without competing with them */
@@ -687,13 +867,13 @@ h4.sec{
 }
 /* the row a working set usually lands on — the anchor the others are read against */
 .efftbl .r.on{background:var(--acc-soft)}
-.efftbl .r.on .n{color:var(--acc)}
+.efftbl .r.on .n{color:var(--acc-text)}
 .efftbl .r.on .f{color:var(--label)}
 
 /* --- glyph picker (replaces the emoji grid) --- */
 .glyph-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
 .glyph-cell{
-  aspect-ratio:1;border-radius:13px;background:var(--surface);
+  aspect-ratio:1;border-radius:var(--r);background:var(--surface);box-shadow:inset 0 0 0 var(--hair) var(--sep-op);
   display:flex;align-items:center;justify-content:center;font-size:24px;
   color:var(--label);transition:background var(--fast),color var(--fast),transform var(--fast);
 }
@@ -703,22 +883,26 @@ h4.sec{
 /* --- big weight readout --- */
 .bwstep{display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 6px}
 .bw-pm{
-  width:46px;height:46px;border-radius:50%;background:var(--surface);flex:none;
+  width:46px;height:46px;border-radius:50%;background:var(--surface);flex:none;box-shadow:inset 0 0 0 var(--hair) var(--sep);
   color:var(--label);display:flex;align-items:center;justify-content:center;font-size:19px;
   transition:background var(--fast),transform var(--fast);--icon-stroke:2.2;
 }
 .bw-pm:active{background:var(--surface-2);transform:scale(.92)}
 .bw-read{
-  font-size:52px;font-weight:600;letter-spacing:-.035em;min-width:158px;text-align:center;
-  font-variant-numeric:tabular-nums;line-height:1;
+  font-family:var(--font-display);font-size:42px;font-weight:700;letter-spacing:-.04em;
+  min-width:170px;text-align:center;font-variant-numeric:tabular-nums;line-height:1;
 }
-.bw-read .u{font-size:19px;color:var(--label-2);font-weight:400;letter-spacing:-.01em}
+.bw-read .u{
+  font-family:var(--font-text);font-size:12px;color:var(--label-2);font-weight:600;
+  letter-spacing:.09em;text-transform:uppercase;
+}
 .bwin{display:flex;align-items:baseline;justify-content:center;gap:7px;margin:16px 0}
 .bwin input{
-  width:150px;background:none;border:none;outline:none;text-align:right;
-  font-size:52px;font-weight:600;letter-spacing:-.035em;color:var(--label);
+  width:160px;background:none;border:none;outline:none;text-align:right;
+  font-family:var(--font-display);font-size:42px;font-weight:700;
+  letter-spacing:-.04em;color:var(--label);
 }
-.bwin span{color:var(--label-2);font-size:19px}
+.bwin span{color:var(--label-2);font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
 
 /* --------------------------------------------------------------- charts -- */
 .chart{width:100%;overflow:hidden}
@@ -728,7 +912,7 @@ h4.sec{
    pushed under the `.chart` clip at either edge — hence no offset here. */
 .ctip{
   position:absolute;left:0;top:0;background:var(--surface-2);
-  border-radius:8px;padding:4px 10px;font-size:12px;font-weight:500;white-space:nowrap;
+  border-radius:var(--r-sm);padding:4px 10px;font-size:12px;font-weight:500;white-space:nowrap;
   max-width:calc(100% - 8px);overflow:hidden;text-overflow:ellipsis;
   pointer-events:none;box-shadow:0 6px 18px -4px rgba(0,0,0,.4);
 }
@@ -786,27 +970,36 @@ h4.sec{
 .mrow .v{font-size:12px;color:var(--label-2);min-width:52px;text-align:right;flex:none}
 /* A headline number inside a card — tile weight without a tile around it, for the pair of
    readings at the top of the effort card. */
-.stat-v{font-size:26px;font-weight:600;letter-spacing:-.026em;line-height:1.1}
+.stat-v{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
 .mchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .mchip{font-size:12px;padding:4px 9px;border-radius:99px;background:var(--surface-2);color:var(--label-2)}
-.mchip.miss{background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange)}
+.mchip.miss{background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange);box-shadow:inset 0 0 0 var(--hair) color-mix(in srgb,var(--orange) 34%,transparent)}
 
 /* --- stat tiles --- */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.tile{background:var(--surface);border-radius:var(--r-card);padding:14px}
-.tile .l{
-  color:var(--label-2);font-size:13px;font-weight:400;letter-spacing:-.004em;
-  text-transform:none;display:flex;align-items:center;gap:5px;
+/* A stat tile is a reading, so the reading is the tile: the label shrinks to a
+   column head and the figure gets the display face at a size you can take in
+   without focusing. */
+.tile{
+  background:var(--surface);border-radius:var(--r-card);padding:14px;
+  border:var(--hair) solid var(--sep-op);
 }
-.tile .l .icn{font-size:14px;color:var(--label)}
-.tile .v{font-size:26px;font-weight:600;letter-spacing:-.026em;margin-top:5px;line-height:1.1}
+.tile .l{
+  color:var(--label-3);font-size:11px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;display:flex;align-items:center;gap:5px;
+}
+.tile .l .icn{font-size:13px;color:var(--label-3)}
+.tile .v{
+  font-family:var(--font-display);font-size:24px;font-weight:700;
+  letter-spacing:-.03em;margin-top:8px;line-height:1.05;
+}
 .tile.tappable:active{background:var(--surface-2)}
 
 /* --- PR badge --- */
 .pr{
   display:inline-flex;align-items:center;gap:4px;
   background:color-mix(in srgb,var(--yellow) 18%,transparent);color:var(--yellow);
-  border-radius:6px;padding:3px 8px;font-size:12px;font-weight:500;
+  border-radius:var(--r-sm);padding:3px 8px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
 }
 .pr .icn{font-size:13px}
 
@@ -816,7 +1009,7 @@ h4.sec{
   bottom:calc(96px + var(--sab));z-index:200;
   background:color-mix(in srgb,var(--surface-2) 88%,transparent);
   backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-radius:99px;padding:11px 20px;font-size:15px;font-weight:500;
+  border-radius:99px;padding:11px 20px;font-size:14px;font-weight:600;
   box-shadow:0 10px 30px -6px rgba(0,0,0,.5);
   opacity:0;pointer-events:none;transition:opacity var(--med),transform var(--med) var(--ease);
   max-width:88vw;text-align:center;
@@ -836,12 +1029,14 @@ h4.sec{
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}
 .cal-h{text-align:center;font-size:11px;color:var(--label-3);font-weight:500;text-transform:uppercase;padding:2px 0}
 .cal-d{
-  aspect-ratio:1;border-radius:10px;background:var(--surface);
+  aspect-ratio:1;border-radius:var(--r-sm);background:var(--surface);
+  box-shadow:inset 0 0 0 var(--hair) var(--sep-op);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  font-weight:400;font-size:15px;color:var(--label);transition:background var(--fast);
+  font-family:var(--font-display);font-weight:600;font-size:13px;letter-spacing:-.02em;
+  color:var(--label);transition:background var(--fast);
 }
 .cal-d:active{background:var(--surface-2)}
-.cal-d.has{background:var(--acc-soft);color:var(--acc)}
+.cal-d.has{background:var(--acc-soft);color:var(--acc-text)}
 .cal-d.today{box-shadow:inset 0 0 0 1.8px var(--acc)}
 .cal-d i{width:5px;height:5px;border-radius:50%;background:transparent}
 .cal-d i.done{background:var(--acc)}
@@ -859,32 +1054,64 @@ h4.sec{
 /* --- supersets --- */
 .ss-label{
   font-size:12px;font-weight:600;letter-spacing:-.004em;text-transform:none;
-  color:var(--acc);margin:8px 0 5px 4px;display:flex;align-items:center;gap:5px;
+  color:var(--acc-text);margin:9px 0 5px 0;display:flex;align-items:center;gap:5px;
 }
 .ss-label .icn{font-size:13px}
 .item.in-ss{box-shadow:inset 3px 0 0 var(--acc)}
 .ss-card{
-  border-radius:var(--r-lg);padding:14px;
+  border-radius:var(--r-card);padding:14px;
   background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--acc-line);
 }
 .ss-hd{
-  font-size:12px;font-weight:600;color:var(--acc);margin-bottom:12px;
+  font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--acc-text);margin-bottom:12px;
   text-align:center;display:flex;align-items:center;justify-content:center;gap:5px;
 }
 .ss-ex{position:relative}
-.ss-amp{text-align:center;font-size:15px;font-weight:600;color:var(--acc);margin:14px 0 8px}
+.ss-amp{text-align:center;font-size:14px;font-weight:600;color:var(--acc-text);margin:14px 0 8px}
+
+/* --- a section header that carries actions on the right --- */
+.sect-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:9px}
+.sect-h .sect-t{padding:0}
+
+/* --- home: the week, sitting on the page --- */
+.wk{padding-bottom:16px;border-bottom:var(--hair) solid var(--sep);margin-bottom:16px}
+.wk-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.wk-h .lbl{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--label-3)}
+.iconbtn.sm{width:30px;height:30px;font-size:14px;background:none;border-color:transparent}
+.iconbtn.sm:active{background:var(--surface-2)}
+
+/* --- home: the body-weight reading --- */
+.bw-hero{display:flex;align-items:baseline;gap:8px;margin:2px 0 0}
+.bw-hero .v{
+  font-family:var(--font-display);font-size:36px;font-weight:700;
+  letter-spacing:-.04em;line-height:1;
+}
+.bw-hero .delta{
+  display:inline-flex;align-items:center;gap:2px;font-size:13px;font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
 
 /* --- home: today's session row --- */
 .today-row{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
-  margin-top:12px;padding:12px 14px;border-radius:var(--r);background:var(--surface-2);
+  margin-top:12px;padding:13px 14px;border-radius:var(--r);background:var(--surface-2);
   transition:background var(--fast);width:100%;text-align:left;
 }
 .today-row:active{background:var(--surface-3)}
-.today-row .lbl2{font-size:11px;font-weight:500;letter-spacing:.03em;text-transform:uppercase;color:var(--label-3)}
+/* The two things on Home that are genuinely raised off the page get the filled container
+   that rule 2 takes away from everything else: the session you are here to start, and a
+   Coach proposal that arrived while you were away. */
+.today-row.raised{
+  margin-top:0;margin-bottom:12px;padding:14px;
+  background:var(--surface);border:var(--hair) solid var(--sep-op);
+}
+.today-row.raised.go{border-color:var(--acc-line)}
+.today-row.raised:active{background:var(--surface-2)}
+.today-row .lbl2{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--label-3)}
 .today-row .ttl{
-  font-weight:500;font-size:17px;line-height:1.25;text-transform:capitalize;
-  letter-spacing:-.012em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;
+  font-family:var(--font-display);font-weight:700;font-size:16px;line-height:1.2;
+  text-transform:capitalize;letter-spacing:-.026em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px;
 }
 
 /* --------------------------------------------------- desktop (≥1000px) --- */
@@ -893,7 +1120,10 @@ h4.sec{
   #app{max-width:1080px;padding-top:32px}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
   .cols>*{min-width:0}
-  #app .list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #app .list{display:grid;grid-template-columns:1fr 1fr;gap:8px;border:0}
+  #app .list .item{
+    border:var(--hair) solid var(--sep-op);border-radius:var(--r-card);padding:10px 12px;
+  }
   #modal-root .list,.narrow .list{display:flex;flex-direction:column}
   .narrow{max-width:640px;margin:0 auto}
   .tiles{grid-template-columns:repeat(4,1fr)}

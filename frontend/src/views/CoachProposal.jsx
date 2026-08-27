@@ -166,7 +166,7 @@ function ChangeSet({ p, S, update, toast, nav }) {
 
     {!!marked.summary && <div className="card"><div className="muted small" style={{ lineHeight: 1.55 }}>{marked.summary}</div></div>}
 
-    {marked.planMoved && <div className="card" style={{ borderColor: 'var(--yellow)' }}>
+    {marked.planMoved && <div className="card raised" style={{ borderColor: 'var(--yellow)' }}>
       <div className="row" style={{ gap: 9 }}>
         <span className="lrow-i" style={{ '--tint': 'var(--yellow)' }}><Icon name="info" /></span>
         <div className="small" style={{ lineHeight: 1.45 }}>

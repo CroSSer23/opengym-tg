@@ -62,7 +62,7 @@ export default function AdminCoach() {
   const authed = d.auth?.state === 'connected' || d.auth?.state === 'not-required'
   const live = d.enabled && d.runtime.ok && authed
 
-  return <div className="card" style={{ borderColor: live ? 'var(--acc)' : undefined }}>
+  return <div className={'card' + (live ? ' raised' : '')} style={{ borderColor: live ? 'var(--acc)' : undefined }}>
     <div className="row between" style={{ marginBottom: 8 }}>
       <h2 style={{ margin: 0 }}>AI Coach</h2>
       <Switch checked={!!d.enabled} disabled={busy} onChange={v => patch({ enabled: v })} />

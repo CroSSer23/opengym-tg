@@ -12,7 +12,7 @@ import Media from '../components/Media.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
-import { nextPrescription, applyPrescription } from '../lib/progression.js'
+import { nextPrescription, applyPrescription, targetOf, targetState } from '../lib/progression.js'
 import { glyphOf } from '../lib/glyphs.js'
 
 /* ---------- start chooser (no active workout) ---------- */
@@ -24,7 +24,7 @@ function StartChooser() {
   const others = S.routines.filter(r => r !== todayR)
   return <div className="narrow">
     <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} — {todayR ? t('today is {0}', todayR.name) : t('rest day, but no one’s stopping you')}</div></div></div>
-    {todayR && <div className="card" style={{ borderColor: 'var(--acc)' }}>
+    {todayR && <div className="card raised" style={{ borderColor: 'var(--acc)' }}>
       <h2 className="accent">{t("Today's plan")}{todayOvr ? ' · ' + t('rescheduled') : ''}</h2>
       <div className="row between" style={{ marginBottom: 12 }}>
         <div><div className="big">{todayR.name}</div><div className="muted small">{exCount(todayR.ex.length)}</div></div>
@@ -51,6 +51,41 @@ function Elapsed({ start }) {
     tick(); const iv = setInterval(tick, 1000); return () => clearInterval(iv)
   }, [start])
   return <span>{t}</span>
+}
+
+/* ---------- what this exercise asked for, and whether it got it ----------
+   The one device the redesign is built around. The prescription is drawn as an outline;
+   logging sets that meet it fills the outline in. Nothing here decides anything - the rule
+   for "did that set land" is progression.js's, the same one that decides whether the weight
+   goes up next time, so the figure a lifter watches fill is filled by the engine's own
+   reading rather than by a second opinion living in a view.
+
+   Cardio has no target to miss (its progression policy is always off), so it gets no strip
+   rather than an empty one. */
+function TargetStrip({ entry, mode, unit }) {
+  const timed = mode === 'time'
+  if (mode === 'cardio') return null
+  const tgt = targetOf(entry)
+  const goal = timed ? tgt.sec : tgt.reps
+  if (!(goal > 0)) return null
+  const sets = tgt.sets || entry.sets.length
+  const state = targetState(entry.sets, goal, timed ? 'time' : 'reps', sets)
+  const landed = entry.sets.filter(s => s.done).length
+  const label = state === 'hit' ? t('all in') : state === 'miss' ? t('came up short') : landed + ' / ' + sets
+
+  return <div className="tgt">
+    <span className="unit">{t('Target')}</span>
+    <span className={'gt ' + state}>{sets}</span>
+    <span className="op">×</span>
+    <span className={'gt ' + state}>{timed ? tgt.sec : goal}</span>
+    {timed && <span className="unit">{t('sec')}</span>}
+    {!timed && tgt.weight > 0 && <>
+      <span className="op">@</span>
+      <span className={'gt ' + state}>{fmtNum(tgt.weight)}</span>
+      <span className="unit">{unit}</span>
+    </>}
+    <span className={'state ' + state}>{label}</span>
+  </div>
 }
 
 /* ---------- one exercise block (reps: weight×reps · time: a held duration · cardio: duration+speed) ---------- */
@@ -115,7 +150,8 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       <Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} />
       <span>{t(...plan.why)}</span>
     </div>}
-    <div className="card" style={{ marginTop: 10, marginBottom: 0 }}>
+    <TargetStrip entry={entry} mode={mode} unit={S.unit} />
+    <div style={{ marginTop: 10 }}>
       {/* the header carries the same eff3 sizing as the rows, or the labels drift off their columns */}
       <div className={'sethead' + (col3 ? ' eff3' : '')}><span className="n-sp" /><span className="w-sp">{col1.hd}</span><span className="r-sp">{col2.hd}</span>{col3 && <span className="eff-sp">{col3.hd}</span>}{timed && <span className="ck-sp" />}<span className="ck-sp" /></div>
       {entry.sets.map((s, i) => <div key={i} className={'setrow' + (s.done ? ' done' : '') + (col3 ? ' eff3' : '')}>

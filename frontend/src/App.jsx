@@ -31,12 +31,26 @@ import CoachProposal from './views/CoachProposal.jsx'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
+/**
+ * Inside Telegram the app is a sheet inside someone else's window, and a dark Mini App in a
+ * light client reads as broken rather than as a preference. So Telegram's own scheme wins
+ * there by default — and only by default: turning "Match Telegram's theme" off in Settings
+ * hands control back to the profile's own choice, on every device.
+ */
+function effectiveTheme(S) {
+  if (tg.IN_TELEGRAM && S.tgTheme !== false) {
+    const scheme = tg.colorScheme()
+    if (scheme) return scheme
+  }
+  return S.theme
+}
+
 function applyPrefs(theme, accent) {
   const de = document.documentElement
   de.dataset.theme = theme === 'light' ? 'light' : 'dark'
   de.dataset.accent = ACCENTS[accent] ? accent : 'lime'
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+  if (meta) meta.content = de.dataset.theme === 'light' ? '#f4f4f2' : '#0a0b0b'
 }
 
 function Shell() {
@@ -46,7 +60,9 @@ function Shell() {
   const isGuest = useStore(s => s.isGuest())
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
   useEffect(() => { setNav(navigate) }, [navigate])
-  useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
+  useEffect(() => { applyPrefs(effectiveTheme(S), S.accent) }, [S.theme, S.accent, S.tgTheme])
+  // Telegram's theme can flip while the app is open, and the sheet has to follow it live.
+  useEffect(() => tg.onThemeChanged(() => applyPrefs(effectiveTheme(useStore.getState().S), useStore.getState().S.accent)), [])
   useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
   useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
   // every tab/route change starts at the top of the page

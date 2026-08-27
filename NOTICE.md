@@ -57,6 +57,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Typefaces
+
+The interface is set in two typefaces, both vendored into `frontend/src/fonts/` as variable
+woff2 subsets and served from the app''s own origin rather than a font CDN:
+
+- [**Unbounded**](https://github.com/googlefonts/unbounded) — Copyright 2022 The Unbounded
+  Project Authors. Used for display type and every figure.
+- [**Golos Text**](https://github.com/googlefonts/golos-text) — Copyright 2019 The Golos Text
+  Project Authors. Used for interface text.
+
+Both are licensed under the **SIL Open Font License, Version 1.1**, which permits bundling and
+redistribution with software. The full licence text for each ships beside the font files as
+`frontend/src/fonts/Unbounded-OFL.txt` and `frontend/src/fonts/GolosText-OFL.txt`; neither font
+is sold, and neither is distributed under a reserved font name.
+
 ## Exercise data & media
 
 The exercise names, instructions (English in `frontend/src/lib/exercises-data.js`, other

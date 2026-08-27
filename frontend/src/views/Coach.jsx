@@ -203,7 +203,7 @@ function ConsentCard({ onDone }) {
 function StatusCard({ job, pending, nav }) {
   if (job) return <div className="card">
     <div className="row" style={{ gap: 10 }}>
-      <span className="lrow-i" style={{ background: 'var(--orange)' }}><Icon name="sparkles" /></span>
+      <span className="lrow-i" style={{ '--tint': 'var(--orange)' }}><Icon name="sparkles" /></span>
       <div>
         <div style={{ fontWeight: 600 }}>{t('The Coach is thinking…')}</div>
         <div className="muted small">{t('This takes a minute or two. You can leave this screen — it keeps going.')}</div>
@@ -211,10 +211,10 @@ function StatusCard({ job, pending, nav }) {
     </div>
   </div>
 
-  if (pending) return <div className="card" style={{ borderColor: 'var(--acc)' }}>
+  if (pending) return <div className="card raised" style={{ borderColor: 'var(--acc)' }}>
     <div className="today-row" onClick={() => nav('/coach/proposal')}>
       <div className="row" style={{ gap: 9, minWidth: 0 }}>
-        <span className="lrow-i" style={{ background: 'var(--acc)' }}><Icon name="clipboard" /></span>
+        <span className="lrow-i" style={{ '--tint': 'var(--acc)' }}><Icon name="clipboard" /></span>
         <div style={{ minWidth: 0 }}>
           <div className="lbl2">{pending.kind === 'create' ? t('Your plan is ready') : t('Suggestions ready')}</div>
           <div className="ttl">{pending.kind === 'create'

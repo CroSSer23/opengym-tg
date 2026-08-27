@@ -21,6 +21,10 @@ export const DEF = {
   // rather than true so that a profile which never had a bot to opt out of reads as the
   // default, and so the switch in Settings can tell "on" from "never asked".
   tgNotify: undefined,
+  // Follow Telegram's own light/dark while the app is running inside it. Undefined means on,
+  // for the same reason as tgNotify: a profile that has never seen a Mini App should read as
+  // the default rather than as having opted in.
+  tgTheme: undefined,
   // AI Coach (issue: AI enablement). null until the profile opts in — a null namespace is the
   // same app it was before the feature existed, which is what Epic F asks for. Shape and
   // bounds live in lib/coach.js.

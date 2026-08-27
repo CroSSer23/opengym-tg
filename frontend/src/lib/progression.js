@@ -226,6 +226,58 @@ export function nextPrescription(S, cfg, routine) {
 }
 
 /**
+ * What this session actually asked for: the routine's configuration, with whatever the policy
+ * decided this time laid over it. This is the number the app put in the row before anyone
+ * touched it, which is what makes it the target rather than just "the current value".
+ */
+export function targetOf(entry) {
+  const cfg = (entry && entry.target) || {}
+  const plan = (entry && entry.plan) || {}
+  return {
+    sets: cfg.sets || (entry && entry.sets ? entry.sets.length : 0),
+    reps: plan.reps != null ? plan.reps : cfg.reps,
+    weight: plan.weight != null ? plan.weight : cfg.weight,
+    sec: plan.sec != null ? plan.sec : cfg.sec,
+    min: cfg.min,
+    speed: cfg.speed
+  }
+}
+
+/**
+ * Did one logged set meet what was asked of it?
+ *
+ * This is the same reading the policies above use, pulled out so the UI can show a target
+ * being met by exactly the rule that decides whether the weight goes up. Two copies of
+ * "what counts as a hit" is how the screen and the engine end up disagreeing in front of
+ * someone holding a barbell.
+ *
+ * Returns null for a set that was never checked off: that is not a miss, it is unanswered.
+ */
+export function setMeetsTarget(set, goal, mode = 'reps') {
+  if (!set || !set.done) return null
+  if (!(goal > 0)) return true                  // nothing was asked, so nothing was missed
+  const got = mode === 'time' ? set.sec : set.r
+  return (got || 0) >= goal
+}
+
+/**
+ * How a whole exercise stands against its target, for the one readout that says so:
+ *   'pending' - nothing logged yet
+ *   'partial' - everything logged so far landed, but there is more to do
+ *   'hit'     - every prescribed set is logged and every one of them landed
+ *   'miss'    - at least one logged set came up short
+ * A miss is sticky. Falling short on set two is not undone by set three going well, and the
+ * readout should not pretend otherwise.
+ */
+export function targetState(sets, goal, mode = 'reps', prescribed = 0) {
+  const answers = (sets || []).map(s => setMeetsTarget(s, goal, mode));
+  if (answers.some(a => a === false)) return 'miss'
+  const landed = answers.filter(a => a === true).length
+  if (!landed) return 'pending'
+  return landed >= Math.max(prescribed, (sets || []).length) ? 'hit' : 'partial'
+}
+
+/**
  * Apply a prescription to freshly built sets. Only the fields the policy actually decided
  * are touched, and only on sets that have not been logged yet.
  */

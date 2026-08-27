@@ -311,6 +311,10 @@ function TelegramCard({ S, update, toast }) {
       <Row icon="bell" iconTint="var(--blue)" title={t('Notify me on Telegram')}>
         <Switch checked={S.tgNotify !== false} onChange={v => update(s => { s.tgNotify = v })} />
       </Row>
+      <Row icon="sun" iconTint="var(--yellow)" title={t("Match Telegram's theme")}
+        subtitle={t('Only while the app is open inside Telegram.')}>
+        <Switch checked={S.tgTheme !== false} onChange={v => update(s => { s.tgTheme = v })} />
+      </Row>
       <Row icon="xmark" iconTint="var(--red)" title={t('Unlink Telegram')} danger onClick={busy ? undefined : unlink} />
     </> : IN_TELEGRAM ? (
       <Row icon="link" iconTint="var(--blue)" title={t('Link this Telegram account')}

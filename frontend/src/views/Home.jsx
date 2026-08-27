@@ -16,27 +16,28 @@ import { MOBILE } from '../lib/mobile.js'
 
 // A job in flight or a proposal waiting is the only reason the Coach interrupts Home. When it
 // has nothing to say it renders nothing at all — and it only polls while Home is on screen.
+//
+// This is one of the two things on Home that keeps a filled container, because it is one of the
+// two things that is genuinely raised off the page: something arrived, and it wants an answer.
 function CoachCard({ nav }) {
   const S = useStore(s => s.S)
   const { job, pending } = useCoachStatus(hasConsent(S))
   if (!hasConsent(S) || (!job && !pending)) return null
   const ready = !!pending
-  return <div className="card" style={ready ? { borderColor: 'var(--acc)' } : null}>
-    <div className="today-row" onClick={() => nav(ready ? '/coach/proposal' : '/coach')}>
-      <div className="row" style={{ gap: 9, minWidth: 0 }}>
-        <span className="lrow-i" style={{ background: ready ? 'var(--acc)' : 'var(--orange)' }}><Icon name="sparkles" /></span>
-        <div style={{ minWidth: 0 }}>
-          <div className="lbl2">{t('Coach')}</div>
-          <div className="ttl">{ready
-            ? (pending.kind === 'create'
-              ? t('Your plan is ready')
-              : t(pending.changes?.length === 1 ? '{0} suggestion for you' : '{0} suggestions for you', pending.changes?.length || 0))
-            : t('Reading your training…')}</div>
-        </div>
+  return <button className={'today-row raised' + (ready ? ' go' : '')} onClick={() => nav(ready ? '/coach/proposal' : '/coach')}>
+    <div className="row" style={{ gap: 11, minWidth: 0 }}>
+      <span className="lrow-i" style={{ '--tint': ready ? 'var(--acc)' : 'var(--orange)' }}><Icon name="sparkles" /></span>
+      <div style={{ minWidth: 0 }}>
+        <div className="lbl2">{t('Coach')}</div>
+        <div className="ttl">{ready
+          ? (pending.kind === 'create'
+            ? t('Your plan is ready')
+            : t(pending.changes?.length === 1 ? '{0} suggestion for you' : '{0} suggestions for you', pending.changes?.length || 0))
+          : t('Reading your training…')}</div>
       </div>
-      {ready ? <span className="tag acc">{t('Review')}</span> : <Icon name="chevronRight" className="chev" />}
     </div>
-  </div>
+    {ready ? <span className="tag acc">{t('Review')}</span> : <Icon name="chevronRight" className="chev" />}
+  </button>
 }
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
@@ -82,61 +83,65 @@ export default function Home() {
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
     </div>
 
-    <div className="card">
-      <div className="row between" style={{ marginBottom: 8 }}>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label="Previous week"><Icon name="chevronLeft" /></button>
-        <div className="small muted" style={{ fontWeight: 500 }}>{wkLabel}</div>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label="Next week"><Icon name="chevronRight" /></button>
+    {/* The week sits on the page under its own rule rather than inside a card: it is a
+        calendar, and a calendar is a thing you read, not a thing that arrived. */}
+    <div className="wk">
+      <div className="wk-h">
+        <button className="iconbtn sm" onClick={() => setWeekOffset(w => w - 1)} aria-label="Previous week"><Icon name="chevronLeft" /></button>
+        <div className="lbl">{wkLabel}</div>
+        <button className="iconbtn sm" onClick={() => setWeekOffset(w => w + 1)} aria-label="Next week"><Icon name="chevronRight" /></button>
       </div>
       <div className="week">{strip}</div>
-      <div className="today-row" onClick={onToday}>
-        <div className="row" style={{ gap: 9, minWidth: 0 }}>
-          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? 'var(--acc)' : 'var(--surface-3)' }}>
-            <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : 'moon'} />
-          </span>
-          <div style={{ minWidth: 0 }}>
-            <div className="lbl2">{t('Today')}</div>
-            <div className="ttl">{S.active ? t('{0} — in progress', S.active.name) : routine ? routine.name : t('Rest day')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
-          </div>
-        </div>
-        {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{t('Resume')}</span>
-          : routine ? <span className="tag acc">{t('Start')}</span>
-          : <Icon name="plus" className="chev" />}
-      </div>
     </div>
+
+    {/* The other raised thing, and the reason the app was opened. */}
+    <button className={'today-row raised' + (S.active || routine ? ' go' : '')} onClick={onToday}>
+      <div className="row" style={{ gap: 11, minWidth: 0 }}>
+        <span className="lrow-i" style={{ '--tint': S.active ? 'var(--orange)' : routine ? 'var(--acc)' : 'var(--label-3)' }}>
+          <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : 'moon'} />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div className="lbl2">{t('Today')}</div>
+          <div className="ttl">{S.active ? t('{0} — in progress', S.active.name) : routine ? routine.name : t('Rest day')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
+        </div>
+      </div>
+      {S.active ? <span className="tag" style={{ color: 'var(--orange)', boxShadow: 'inset 0 0 0 1px color-mix(in srgb,var(--orange) 34%,transparent)' }}>{t('Resume')}</span>
+        : routine ? <span className="tag acc">{t('Start')}</span>
+        : <Icon name="plus" className="chev" />}
+    </button>
 
     {coachOn && <CoachCard nav={nav} />}
 
     {!S.routines.length && !S.active && (
-      <div className="card">
-        <div className="row" style={{ gap: 10, marginBottom: 6 }}>
-          <span className="lrow-i"><Icon name="sparkles" /></span>
-          <div className="big" style={{ fontSize: 22 }}>{t('Welcome!')}</div>
-        </div>
-        <div className="muted small" style={{ marginBottom: 12 }}>{t('Set up your weekly routine to get going — or load a ready-made Push / Pull / Legs plan.')}</div>
+      <section className="sect">
+        <div className="sect-t">{t('Welcome!')}</div>
+        <div className="muted" style={{ marginBottom: 14 }}>{t('Set up your weekly routine to get going — or load a ready-made Push / Pull / Legs plan.')}</div>
         {coachOn && <>
           <Button variant="primary" icon="sparkles" onClick={() => nav(hasConsent(S) ? '/coach/intake' : '/coach')}>{t('Let the Coach build it')}</Button>
           <div style={{ height: 8 }} />
         </>}
         <Button variant={coachOn ? 'plain' : 'primary'} icon="sparkles" onClick={loadStarterPlan}>{t('Load starter plan (PPL)')}</Button>
         <div style={{ height: 8 }} /><Button onClick={() => nav('/plan')}>{t('Build my own plan')}</Button>
-      </div>
+      </section>
     )}
 
-    <div className="card">
-      <div className="row between" style={{ marginBottom: 6 }}>
-        <h2 style={{ margin: 0 }}>{t('Body weight')}</h2>
+    <section className="sect">
+      <div className="sect-h">
+        <div className="sect-t">{t('Body weight')}</div>
         <div className="row" style={{ gap: 8 }}>
           <Button size="sm" icon="target" style={S.targetW ? { color: 'var(--yellow)' } : undefined} onClick={goalSheet}>{S.targetW ? fmtNum(S.targetW) : t('Goal')}</Button>
           <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>
         </div>
       </div>
       {bw ? <>
-        <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
-          <div className="big">{fmtNum(bw.w)} <span className="muted" style={{ fontSize: '1rem' }}>{S.unit}</span></div>
+        {/* Rule 1: the reading is the largest thing here, and everything around it is
+            annotation on the reading. */}
+        <div className="bw-hero">
+          <span className="v">{fmtNum(bw.w)}</span>
+          <span className="unit">{S.unit}</span>
           {/* only when it actually moved — an unchanged weight used to read as "− 0" */}
           {!!delta && (
-            <span className="small row" style={{ gap: 2, fontWeight: 500, color: bwDeltaColor(delta, bw.w) }}>
+            <span className="delta" style={{ color: bwDeltaColor(delta, bw.w) }}>
               <Icon name={delta > 0 ? 'arrowUp' : 'arrowDown'} style={{ fontSize: 12 }} />
               {fmtNum(Math.abs(delta))}
             </span>
@@ -144,25 +149,26 @@ export default function Home() {
           <span className="dim small" style={{ marginLeft: 'auto' }}>{fmtDate(bw.d, true)}</span>
         </div>
         {S.targetW && (
-          <div className="small row" style={{ color: 'var(--yellow)', marginTop: 4, gap: 5 }}>
+          <div className="small row" style={{ color: 'var(--yellow)', marginTop: 2, gap: 5 }}>
             <Icon name="target" style={{ fontSize: 13 }} />
             <span>{t('Goal')} {fmtNum(S.targetW)} {S.unit} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached!') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + S.unit)}</span>
           </div>
         )}
-        <div className="chart" style={{ marginTop: 8 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>
+        <div className="chart" style={{ marginTop: 10 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>
       </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
-    </div>
+    </section>
 
-    <div className="card tappable" style={{ cursor: 'pointer' }} onClick={() => calendarSheet()}>
-      <div className="row between">
-        <div>
-          <div className="row" style={{ gap: 7, fontSize: 22, fontWeight: 600, letterSpacing: '-.021em' }}>
-            <Icon name="flame" style={{ color: 'var(--orange)' }} />
-            {t('{0} week streak', streakWeeks(S))}
-          </div>
-          <div className="muted small" style={{ marginTop: 2 }}>{wThisWeek}{plannedPerWeek ? ' / ' + plannedPerWeek : ''} {t('this week')} · {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', S.workouts.length)}</div>
-        </div>
-        <Icon name="calendar" className="chev" style={{ fontSize: 20 }} />
+    {/* One ruled row, the same shape as every other tappable row in the app. */}
+    <div className="sect">
+      <div className="sect-b">
+        <button className="lrow tap" onClick={() => calendarSheet()}>
+          <span className="lrow-i" style={{ '--tint': 'var(--orange)' }}><Icon name="flame" /></span>
+          <span className="lrow-m">
+            <span className="lrow-t">{t('{0} week streak', streakWeeks(S))}</span>
+            <span className="lrow-s">{wThisWeek}{plannedPerWeek ? ' / ' + plannedPerWeek : ''} {t('this week')} · {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', S.workouts.length)}</span>
+          </span>
+          <Icon name="calendar" className="lrow-c" />
+        </button>
       </div>
     </div>
   </div>
