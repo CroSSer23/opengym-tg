@@ -478,6 +478,13 @@ function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
         step={mode === 'time' ? 5 : 1.25} decimal={mode !== 'time'} onChange={v => setC(x => ({ ...x, inc: v }))} />
       {active === 'double' && <Stepper label={t('Reps from')} value={c.repsMin || Math.max(1, (c.reps || 10) - 2)}
         step={1} decimal={false} onChange={v => setC(x => ({ ...x, repsMin: v }))} />}
+      {active === '531' && <Stepper label={t('Training max ({0})', unit)} value={c.tm || 0}
+        step={inc} decimal onChange={v => setC(x => ({ ...x, tm: v, tmFrom: v > 0 ? todayISO() : undefined }))} />}
+    </div>}
+    {active === '531' && <div className="small dim" style={{ margin: '-8px 0 18px', lineHeight: 1.5 }}>
+      {c.tm > 0
+        ? t('Every percentage is taken off this number, not off a real max — about 90% of what you could lift on the day is the point.')
+        : t('Leave it at zero and the training max is read off your estimated 1RM, at the usual 90%.')}
     </div>}
   </>
 }
@@ -504,7 +511,15 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine }) {
     else {
       const reps = Math.max(1, Math.round(c.reps) || 10)
       const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...prog }
-      if (policyFor({ ...c, id: ex.id }, routine, 'reps') === 'double') out.repsMin = Math.min(reps, Math.max(1, Math.round(c.repsMin) || Math.max(1, reps - 2)))
+      const rule = policyFor({ ...c, id: ex.id }, routine, 'reps')
+      if (rule === 'double') out.repsMin = Math.min(reps, Math.max(1, Math.round(c.repsMin) || Math.max(1, reps - 2)))
+      if (rule === '531') {
+        // tmFrom is what makes the cycle countable: it is the date sessions start counting
+        // from, so changing the training max restarts the cycle rather than landing you in
+        // week three of a cycle you never ran.
+        if (c.tm > 0) { out.tm = c.tm; out.tmFrom = c.tmFrom || todayISO() }
+        out.sets = Math.max(3, sets)
+      }
       onSave(out)
     }
   }

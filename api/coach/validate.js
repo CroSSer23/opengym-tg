@@ -25,7 +25,7 @@ export const CHANGE_TYPES = [
   'add-routine', 'remove-routine', 'rename-routine',
   'week'
 ];
-const POLICIES = ['off', 'linear', 'greyskull', 'double', 'time'];
+const POLICIES = ['off', 'linear', 'greyskull', 'double', '531', 'time'];
 const MODES = ['reps', 'time', 'cardio'];
 const MAX_CHANGES = 25;
 const MAX_ROUTINES = 7;

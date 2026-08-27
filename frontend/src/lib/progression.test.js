@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   readSession, sessionsFor, stallCount, nextPrescription, applyPrescription,
   policyFor, defaultIncrement, POLICIES_FOR, DELOAD_AFTER
-, targetOf, setMeetsTarget, targetState } from './progression.js'
+, targetOf, setMeetsTarget, targetState, trainingMax, cycleWeek, baseTrainingMax, CYCLE_531, WEEKS_531 } from './progression.js'
 import { EXDB } from './exercises.js'
 
 const LIFT = EXDB.find(e => e.bp !== 'cardio' && !['upper legs', 'lower legs', 'back', 'hips', 'glutes'].includes(e.bp)).id
@@ -442,5 +442,123 @@ describe('targetState', () => {
   it('makes a miss stick, because a later good set does not undo an earlier short one', () => {
     expect(targetState([short, hit, hit], 10, 'reps', 3)).toBe('miss')
     expect(targetState([hit, short, todo], 10, 'reps', 3)).toBe('miss')
+  })
+})
+
+/* ---------------- 5/3/1 ---------------- */
+
+describe('5/3/1', () => {
+  // A bench (upper body) so the increment is 2.5 kg, and a training max round enough that the
+  // percentages are checkable by hand.
+  const CFG = { id: '0025', sets: 3, reps: 5, prog: '531', tm: 100, tmFrom: '2026-01-01' }
+  const state = (sessions = []) => ({ unit: 'kg', workouts: sessions, exWeights: {} })
+  const session = (d, sets) => ({
+    d, entries: [{ id: '0025', target: { sets: 3, reps: 5, weight: 60 }, sets }]
+  })
+  const logged = (d) => session(d, [{ w: 65, r: 5, done: true }, { w: 75, r: 5, done: true }, { w: 85, r: 8, done: true }])
+
+  it('reads percentages off the training max, never off a real max', () => {
+    const p = nextPrescription(state(), CFG, null)
+    expect(p.policy).toBe('531')
+    expect(p.tm).toBe(100)
+    expect(p.perSet.map(s => s.w)).toEqual([65, 75, 85])
+    expect(p.perSet.map(s => s.r)).toEqual([5, 5, 5])
+  })
+
+  it('makes the last set of a working week an AMRAP, and the deload week not one', () => {
+    const wk1 = nextPrescription(state(), CFG, null)
+    expect(wk1.perSet[2].amrap).toBe(true)
+    expect(wk1.perSet[0].amrap).toBe(false)
+    const wk4 = nextPrescription(state([logged('2026-01-05'), logged('2026-01-12'), logged('2026-01-19')]), CFG, null)
+    expect(wk4.kind).toBe('deload')
+    expect(wk4.perSet.every(s => !s.amrap)).toBe(true)
+    expect(wk4.perSet.map(s => s.w)).toEqual([40, 50, 60])
+  })
+
+  it('walks the cycle one logged session at a time', () => {
+    const days = ['2026-01-05', '2026-01-12', '2026-01-19', '2026-01-26']
+    const weeks = days.map((_, i) => cycleWeek(state(days.slice(0, i).map(logged)), CFG))
+    expect(weeks).toEqual([0, 1, 2, 3])
+  })
+
+  it('raises the training max once a cycle is complete, and not before', () => {
+    const days = ['2026-01-05', '2026-01-12', '2026-01-19', '2026-01-26']
+    expect(trainingMax(state(days.slice(0, 3).map(logged)), CFG, 2.5)).toBe(100)
+    expect(trainingMax(state(days.map(logged)), CFG, 2.5)).toBe(102.5)
+    expect(cycleWeek(state(days.map(logged)), CFG)).toBe(0)
+  })
+
+  it('only counts sessions from the day the training max was set', () => {
+    // Two sessions before the cycle started must not put the lifter in week three of it.
+    const before = [logged('2025-11-01'), logged('2025-12-01')]
+    expect(cycleWeek(state(before), CFG)).toBe(0)
+    expect(cycleWeek(state([...before, logged('2026-02-01')]), CFG)).toBe(1)
+  })
+
+  it('rounds work weights DOWN, because a percentage is a ceiling', () => {
+    // 0.65 x 97.5 = 63.375, which is not loadable; 63.75 would be heavier than asked.
+    const p = nextPrescription(state(), { ...CFG, tm: 97.5 }, null)
+    expect(p.perSet[0].w).toBe(62.5)
+    expect(p.perSet.every(s => s.w % 2.5 === 0)).toBe(true)
+  })
+
+  it('derives a training max from the estimated 1RM when none was set', () => {
+    // One clean set of 5 at 100 estimates well above 100, and 90% of that is the training max.
+    const s = state([session('2026-02-02', [{ w: 100, r: 5, done: true }])])
+    const derived = baseTrainingMax(s, { id: '0025' })
+    expect(derived).toBeGreaterThan(90)
+    expect(derived).toBeLessThan(110)
+  })
+
+  it('says what it needs instead of inventing a weight it cannot know', () => {
+    const p = nextPrescription(state(), { id: '0025', sets: 3, reps: 5, prog: '531' }, null)
+    expect(p.kind).toBe('hold')
+    expect(p.perSet).toBeUndefined()
+    expect(p.why[0]).toMatch(/training max/)
+  })
+
+  it('is a rep-mode policy only', () => {
+    expect(POLICIES_FOR.reps).toContain('531')
+    expect(POLICIES_FOR.time).not.toContain('531')
+    expect(POLICIES_FOR.cardio).not.toContain('531')
+    expect(CYCLE_531).toHaveLength(WEEKS_531)
+  })
+})
+
+describe('applyPrescription with a per-set policy', () => {
+  const per = { kind: '531', perSet: [{ w: 65, r: 5 }, { w: 75, r: 5 }, { w: 85, r: 5 }] }
+
+  it('gives each set its own weight and reps', () => {
+    const out = applyPrescription([{ w: 0, r: 0 }, { w: 0, r: 0 }, { w: 0, r: 0 }], per)
+    expect(out.map(s => [s.w, s.r])).toEqual([[65, 5], [75, 5], [85, 5]])
+  })
+
+  it('grows a short plan rather than dropping the top set', () => {
+    const out = applyPrescription([{ w: 0, r: 0 }], per)
+    expect(out).toHaveLength(3)
+    expect(out[2].w).toBe(85)
+  })
+
+  it('leaves extra sets alone, so a back-off set stays a back-off set', () => {
+    const out = applyPrescription([{ w: 0, r: 0 }, { w: 0, r: 0 }, { w: 0, r: 0 }, { w: 40, r: 12 }], per)
+    expect(out).toHaveLength(4)
+    expect([out[3].w, out[3].r]).toEqual([40, 12])
+  })
+
+  it('never rewrites a set that is already logged', () => {
+    const out = applyPrescription([{ w: 60, r: 6, done: true }, { w: 0, r: 0 }, { w: 0, r: 0 }], per)
+    expect([out[0].w, out[0].r]).toEqual([60, 6])
+    expect(out[1].w).toBe(75)
+  })
+})
+
+describe('targetState with per-set goals', () => {
+  it('judges every set against its own target', () => {
+    const goals = [5, 5, 5]
+    expect(targetState([{ r: 5, done: true }, { r: 5, done: true }, { r: 9, done: true }], goals, 'reps', 3)).toBe('hit')
+    expect(targetState([{ r: 5, done: true }, { r: 4, done: true }, { r: 9, done: true }], goals, 'reps', 3)).toBe('miss')
+  })
+  it('carries the last goal forward past the end of the table', () => {
+    expect(targetState([{ r: 5, done: true }, { r: 5, done: true }], [5], 'reps', 2)).toBe('hit')
   })
 })

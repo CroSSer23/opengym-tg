@@ -12,7 +12,7 @@ import Media from '../components/Media.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
-import { nextPrescription, applyPrescription, targetOf, targetState } from '../lib/progression.js'
+import { nextPrescription, applyPrescription, targetOf, targetState, WEEKS_531 } from '../lib/progression.js'
 import { glyphOf } from '../lib/glyphs.js'
 
 /* ---------- start chooser (no active workout) ---------- */
@@ -66,18 +66,38 @@ function TargetStrip({ entry, mode, unit }) {
   const timed = mode === 'time'
   if (mode === 'cardio') return null
   const tgt = targetOf(entry)
-  const goal = timed ? tgt.sec : tgt.reps
-  if (!(goal > 0)) return null
   const sets = tgt.sets || entry.sets.length
-  const state = targetState(entry.sets, goal, timed ? 'time' : 'reps', sets)
   const landed = entry.sets.filter(s => s.done).length
+
+  // A per-set policy (5/3/1) has three different targets in one session, so the glance is the
+  // top set — the one that is taken for as many reps as you have, and the only one whose
+  // number anybody remembers. The ramp sets are right underneath in the rows.
+  if (tgt.perSet) {
+    const goals = tgt.perSet.map(p => p.r)
+    const state = targetState(entry.sets, goals, 'reps', sets)
+    const top = tgt.perSet[tgt.perSet.length - 1]
+    return <div className="tgt">
+      <span className="unit">{t('Top set')}</span>
+      <span className={'gt ' + state}>{fmtNum(top.w)}</span>
+      <span className="op">×</span>
+      <span className={'gt ' + state}>{top.r}{top.amrap ? '+' : ''}</span>
+      <span className="unit">{unit}</span>
+      <span className={'state ' + state}>
+        {tgt.week != null ? t('week {0} of {1}', tgt.week + 1, WEEKS_531) : landed + ' / ' + sets}
+      </span>
+    </div>
+  }
+
+  const timedGoal = timed ? tgt.sec : tgt.reps
+  if (!(timedGoal > 0)) return null
+  const state = targetState(entry.sets, timedGoal, timed ? 'time' : 'reps', sets)
   const label = state === 'hit' ? t('all in') : state === 'miss' ? t('came up short') : landed + ' / ' + sets
 
   return <div className="tgt">
     <span className="unit">{t('Target')}</span>
     <span className={'gt ' + state}>{sets}</span>
     <span className="op">×</span>
-    <span className={'gt ' + state}>{timed ? tgt.sec : goal}</span>
+    <span className={'gt ' + state}>{timed ? tgt.sec : timedGoal}</span>
     {timed && <span className="unit">{t('sec')}</span>}
     {!timed && tgt.weight > 0 && <>
       <span className="op">@</span>

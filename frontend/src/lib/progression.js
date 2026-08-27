@@ -18,12 +18,13 @@
 
 import { modeOf } from './history.js'
 import { EXIDX } from './exercises.js'
+import { best1RM } from './onerm.js'
 
-export const POLICIES = ['off', 'linear', 'greyskull', 'double', 'time']
+export const POLICIES = ['off', 'linear', 'greyskull', 'double', '531', 'time']
 
 // Which policies can sensibly drive which logging mode.
 export const POLICIES_FOR = {
-  reps: ['off', 'linear', 'greyskull', 'double'],
+  reps: ['off', 'linear', 'greyskull', 'double', '531'],
   time: ['off', 'time'],
   cardio: ['off']
 }
@@ -33,6 +34,7 @@ export const POLICY_NAME = {
   linear: 'Linear progression',
   greyskull: 'Greyskull LP',
   double: 'Double progression',
+  '531': '5/3/1',
   time: 'Add time'
 }
 export const POLICY_DESC = {
@@ -40,6 +42,7 @@ export const POLICY_DESC = {
   linear: 'Hit every rep in every set and the weight goes up. Repeated misses trigger a deload.',
   greyskull: 'Two straight sets plus a final set taken to failure. Beat the target on that set and the weight goes up — double if you double the reps. One failure resets 10 %.',
   double: 'Work up through a rep range at the same weight. Reach the top of the range in every set and the weight goes up, reps back to the bottom.',
+  '531': 'A four-week cycle of percentages off a training max, ending in a deload. The last work set of the first three weeks is taken for as many reps as you have, and the training max goes up once the cycle is done.',
   time: 'Hold every set for the full duration and the target goes up.'
 }
 
@@ -143,6 +146,95 @@ export function stallCount(sessions) {
   return n
 }
 
+/* ============================== 5/3/1 ==============================
+ *
+ * The first policy here that does not compute one number for the whole exercise. 5/3/1 is a
+ * four-week table of percentages, three work sets a session, each at a different load and a
+ * different rep target - so it prescribes per set, and applyPrescription had to learn to
+ * apply per set with it.
+ *
+ * Two things about it are non-negotiable and both are easy to get wrong:
+ *
+ *   · Percentages are of a TRAINING MAX, not of a real one-rep max. The training max is about
+ *     90% of what you could actually lift, and the whole programme works because it is
+ *     deliberately conservative. Running the percentages off a true max turns week three into
+ *     a max attempt.
+ *   · The last work set of the first three weeks is an AMRAP - "5+", "3+", "1+". Taking it for
+ *     exactly the prescribed reps is not the programme; the extra reps are where the progress
+ *     is measured.
+ *
+ * Everything below stays a pure function of history, like the rest of this file: the week you
+ * are in is derived by counting logged sessions, never stored, so fixing a mistyped session
+ * moves the cycle rather than leaving a counter behind that disagrees with the log.
+ */
+
+// week -> [ [percentage of training max, rep target, is it an AMRAP] ... ]
+export const CYCLE_531 = [
+  { key: '5s',     sets: [[0.65, 5, false], [0.75, 5, false], [0.85, 5, true]] },
+  { key: '3s',     sets: [[0.70, 3, false], [0.80, 3, false], [0.90, 3, true]] },
+  { key: '531',    sets: [[0.75, 5, false], [0.85, 3, false], [0.95, 1, true]] },
+  { key: 'deload', sets: [[0.40, 5, false], [0.50, 5, false], [0.60, 5, false]] }
+]
+export const WEEKS_531 = CYCLE_531.length
+
+// Work weights round DOWN to something loadable. Rounding a percentage up quietly makes the
+// week heavier than the programme asked for, which is the one direction 5/3/1 never goes.
+const floorSnap = (v, step) => (step > 0 ? Math.max(step, round1(Math.floor(v / step) * step)) : round1(v))
+
+/**
+ * Where the training max starts. An explicitly configured one always wins; otherwise it is
+ * derived at the documented 90% of the best estimated 1RM this exercise has on record, so
+ * switching an exercise to 5/3/1 does something sensible without a setup form first.
+ */
+export function baseTrainingMax(S, cfg) {
+  if (cfg && cfg.tm > 0) return cfg.tm
+  // best1RM answers with the set the estimate came from, not a bare number - "142.5 from
+  // 100x10" is a different claim from "142.5 from 140x1", and the caller usually wants both.
+  const best = best1RM(S, cfg.id)
+  return best && best.est > 0 ? round1(best.est * 0.9) : 0
+}
+
+/** Sessions counted toward the cycle: reps work logged since the training max was set. */
+function sessions531(S, cfg) {
+  const from = (cfg && cfg.tmFrom) || ''
+  return sessionsFor(S, cfg.id, cfg).filter(s => s.mode === 'reps' && (!from || s.d >= from)).length
+}
+
+/** Which week of the cycle the next session is, 0-indexed. */
+export function cycleWeek(S, cfg) { return sessions531(S, cfg) % WEEKS_531 }
+
+/** The training max in force now: the base, plus one increment per cycle already completed. */
+export function trainingMax(S, cfg, inc) {
+  const base = baseTrainingMax(S, cfg)
+  if (!(base > 0)) return 0
+  const step = inc > 0 ? inc : defaultIncrement(cfg.id, 'kg')
+  return snap(base + Math.floor(sessions531(S, cfg) / WEEKS_531) * step, step)
+}
+
+function prescribe531(S, cfg, inc, unit) {
+  const tm = trainingMax(S, cfg, inc)
+  if (!(tm > 0)) {
+    return { policy: '531', kind: 'hold', why: ['5/3/1 works off a training max — log a set of this lift, or set one in the exercise settings.'] }
+  }
+  const week = cycleWeek(S, cfg)
+  const w = CYCLE_531[week]
+  const perSet = w.sets.map(([pct, reps, amrap]) => ({ w: floorSnap(tm * pct, inc), r: reps, amrap }))
+  const top = perSet[perSet.length - 1]
+  const cycle = Math.floor(sessions531(S, cfg) / WEEKS_531) + 1
+
+  if (w.key === 'deload') {
+    return {
+      policy: '531', kind: 'deload', week, cycle, tm, perSet,
+      why: ['Deload week — cycle {0} done, so next time the training max goes up to {1} {2}.', cycle, snap(tm + inc, inc), unit]
+    }
+  }
+  return {
+    policy: '531', kind: '531', week, cycle, tm, perSet,
+    why: ['Week {0} of cycle {1} off a {2} {3} training max — last set is {4}+, so take every rep you have.',
+      week + 1, cycle, tm, unit, top.r]
+  }
+}
+
 /**
  * The next prescription for one exercise.
  *
@@ -157,6 +249,9 @@ export function nextPrescription(S, cfg, routine) {
   const unit = S.unit || 'kg'
   const inc = cfg.inc > 0 ? cfg.inc : (mode === 'time' ? DEFAULT_SEC_INCREMENT : defaultIncrement(cfg.id, unit))
   if (policy === 'off') return { policy, kind: 'off' }
+  // Ahead of everything below: 5/3/1 reads a table, not the last session, so it works from
+  // the very first workout rather than needing history to get started.
+  if (policy === '531') return prescribe531(S, cfg, inc, unit)
 
   const sessions = sessionsFor(S, cfg.id, cfg).filter(s => s.mode === mode)
   const last = sessions[sessions.length - 1]
@@ -233,8 +328,16 @@ export function nextPrescription(S, cfg, routine) {
 export function targetOf(entry) {
   const cfg = (entry && entry.target) || {}
   const plan = (entry && entry.plan) || {}
+  // A per-set policy defines the shape of the session, so it also defines how many sets there
+  // are meant to be — the routine's own `sets` is what the lifter configured, not what 5/3/1
+  // asked for.
+  const perSet = Array.isArray(plan.perSet) ? plan.perSet : null
   return {
-    sets: cfg.sets || (entry && entry.sets ? entry.sets.length : 0),
+    perSet,
+    week: plan.week,
+    cycle: plan.cycle,
+    tm: plan.tm,
+    sets: perSet ? perSet.length : (cfg.sets || (entry && entry.sets ? entry.sets.length : 0)),
     reps: plan.reps != null ? plan.reps : cfg.reps,
     weight: plan.weight != null ? plan.weight : cfg.weight,
     sec: plan.sec != null ? plan.sec : cfg.sec,
@@ -270,7 +373,11 @@ export function setMeetsTarget(set, goal, mode = 'reps') {
  * readout should not pretend otherwise.
  */
 export function targetState(sets, goal, mode = 'reps', prescribed = 0) {
-  const answers = (sets || []).map(s => setMeetsTarget(s, goal, mode));
+  // `goal` may be one number for the whole exercise, or one per set when the policy
+  // prescribes per set. Past the end of a per-set table the last entry carries on, matching
+  // what applyPrescription does with extra sets.
+  const goalAt = i => (Array.isArray(goal) ? (goal[i] != null ? goal[i] : goal[goal.length - 1]) : goal)
+  const answers = (sets || []).map((s, i) => setMeetsTarget(s, goalAt(i), mode));
   if (answers.some(a => a === false)) return 'miss'
   const landed = answers.filter(a => a === true).length
   if (!landed) return 'pending'
@@ -283,9 +390,23 @@ export function targetState(sets, goal, mode = 'reps', prescribed = 0) {
  */
 export function applyPrescription(sets, p) {
   if (!p || p.kind === 'off' || p.kind === 'first') return sets
-  return sets.map(s => {
+  let base = sets
+  if (Array.isArray(p.perSet) && sets.length < p.perSet.length) {
+    base = sets.slice()
+    while (base.length < p.perSet.length) base.push({ w: 0, r: 0, done: false })
+  }
+  return base.map((s, i) => {
     if (s.done) return s
     const out = { ...s }
+    // A policy that prescribes per set (5/3/1) wins for the sets it covers; anything past the
+    // end of its table keeps whatever the plan said, so adding a fourth set to a 5/3/1 day
+    // gives you a back-off set rather than an error.
+    const per = Array.isArray(p.perSet) ? p.perSet[i] : null
+    if (per) {
+      if (per.w != null) out.w = per.w
+      if (per.r != null) out.r = per.r
+      return out
+    }
     if (p.weight != null) out.w = p.weight
     if (p.reps != null) out.r = p.reps
     if (p.sec != null) out.sec = p.sec
