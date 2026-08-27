@@ -175,6 +175,9 @@ export function validateReview(data, plan) {
   const errors = [];
   const routines = new Map((plan?.routines || []).map(r => [r.id, r]));
   const changes = [];
+  // validatePlan caps a whole new plan at MAX_ROUTINES; a review has to hold the same
+  // ceiling, or 25 add-routine changes in one approved changeset walk straight past it.
+  let routineCount = routines.size;
   const list = Array.isArray(data.changes) ? data.changes : null;
   if (!list) return fail(['changes must be an array (or set "nochange": true with a "reading")']);
 
@@ -248,6 +251,7 @@ export function validateReview(data, plan) {
       case 'remove-exercise':
       case 'remove-routine':
         out.after = null;
+        routineCount--;
         break;
       case 'sets': if (!isInt(c.after, 1, 10)) { errors.push(`${where}.after must be a whole number of sets (1-10)`); return; } break;
       case 'reps': if (!isInt(c.after, 1, 100)) { errors.push(`${where}.after must be a whole number of reps (1-100)`); return; } break;
@@ -283,6 +287,9 @@ export function validateReview(data, plan) {
       }
       case 'add-routine': {
         const a = c.after || {};
+        if (routineCount >= MAX_ROUTINES) {
+          errors.push(`${where} would take the plan past ${MAX_ROUTINES} routines - remove one first`); return;
+        }
         if (!isStr(a.name)) { errors.push(`${where}.after.name is required`); return; }
         const ex = (Array.isArray(a.ex) ? a.ex : []).filter(e => e && isStr(e.id) && libraryHas(e.id)).slice(0, MAX_EX_PER_ROUTINE);
         if (!ex.length) { errors.push(`${where}.after.ex must list at least one exercise from the library`); return; }
@@ -297,6 +304,7 @@ export function validateReview(data, plan) {
             ...(isInt(e.sec, 5, 3600) ? { sec: e.sec } : {})
           }))
         };
+        routineCount++;
         break;
       }
       case 'rename-routine':

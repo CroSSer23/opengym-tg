@@ -140,6 +140,30 @@ test('advice-only notes survive but carry no change', () => {
   assert.equal(r.proposal.changes.length, 1);
 });
 
+test('a changeset cannot grow the plan past the routine ceiling', () => {
+  // validatePlan slices a new plan to seven routines. A review has to hold the same line, or
+  // one approved changeset of add-routine changes walks straight past it.
+  const add = i => ({
+    id: 'a' + i, type: 'add-routine', target: {},
+    after: { name: 'Extra ' + i, ex: [{ id: '0001', sets: 3, reps: 10 }] },
+    why: 'more volume'
+  });
+  const five = review([1, 2, 3, 4, 5].map(add));
+  assert.equal(five.ok, true, 'two routines plus five more is exactly the ceiling');
+  assert.equal(five.proposal.changes.length, 5);
+
+  const six = review([1, 2, 3, 4, 5, 6].map(add));
+  assert.equal(six.ok, false);
+  assert.match(six.errors.join(' '), /past 7 routines/);
+
+  // Making room first is allowed: the count follows the changes in order.
+  const swap = review([
+    { id: 'r', type: 'remove-routine', target: { routineId: 'r2' }, after: null, why: 'never trained' },
+    ...[1, 2, 3, 4, 5, 6].map(add)
+  ]);
+  assert.equal(swap.ok, true, 'one out, six in, still seven');
+});
+
 test('one bad change fails the whole set — nothing is ever half-applied', () => {
   const r = review([change(), change({ id: 'c2', type: 'not-a-type' })]);
   assert.equal(r.ok, false);

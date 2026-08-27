@@ -46,9 +46,13 @@ function importGraph(entry) {
     const file = queue.shift();
     if (seen.has(file)) continue;
     seen.add(file);
+    // Only source files have imports to follow; a .json reached below is a leaf.
+    if (!/\.[cm]?js$/.test(file)) continue;
     const src = fs.readFileSync(file, 'utf8');
-    // Static imports and re-exports, plus the one dynamic import jobs.js uses.
-    for (const m of src.matchAll(/(?:from|import)\s*\(?\s*['"](\.[^'"]+)['"]/g)) {
+    // Static imports and re-exports, the one dynamic import jobs.js uses, and createRequire
+    // calls - payload.js pulls coach/library.json in through one, and the walker used to
+    // report a clean bill of health for a runtime dependency no COPY line mentioned.
+    for (const m of src.matchAll(/(?:from|import|require\w*)\s*\(?\s*['"](\.[^'"]+)['"]/g)) {
       const resolved = path.resolve(path.dirname(file), m[1]);
       if (fs.existsSync(resolved)) queue.push(resolved);
     }
@@ -65,6 +69,15 @@ test('every module the server imports is copied into the image', () => {
     if (!covered) missing.push(rel);
   }
   assert.deepEqual(missing, [], 'add a COPY line to api/Dockerfile for these');
+});
+
+test('the walker follows createRequire, not just import', () => {
+  // payload.js reaches coach/library.json through createRequire. A walker that only reads
+  // import statements gives a clean bill of health to a runtime file no COPY line mentions;
+  // today that is masked because the Dockerfile copies coach/ whole.
+  const graph = importGraph(path.join(API, 'server.js'))
+    .map(f => path.relative(API, f).split(path.sep).join('/'));
+  assert.ok(graph.includes('coach/library.json'), 'library.json is reachable from server.js');
 });
 
 test('the prompts the Coach reads at runtime are in the image too', () => {

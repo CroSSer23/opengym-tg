@@ -143,6 +143,17 @@ test('offendingField only fires on the statuses that mean "bad request"', () => 
   assert.equal(offendingField(500, 'temperature'), null, 'a 500 is not a request the adapter can fix');
 });
 
+test('a 400 that lists the parameters it accepts is not a rejection of them', () => {
+  // Gateways answer an unrelated 400 with a reminder of the schema. Reading a field name out
+  // of that list dropped it, and the memo kept it dropped for the life of the process.
+  const body = 'model "gpt-x" not found. Accepted parameters are: model, messages, stream, temperature, max_tokens, top_p.';
+  assert.equal(offendingField(400, body), null);
+  assert.equal(offendingField(400, 'supported fields: temperature, response_format'), null);
+  // A real rejection that happens to name the list as well is still a rejection.
+  assert.equal(offendingField(400, 'temperature is not supported by this model'), 'temperature');
+  assert.equal(offendingField(400, 'unsupported parameter: max_tokens'), 'max_tokens');
+});
+
 /* ---------------- failure, classified the way jobs.js reads it ---------------- */
 
 test('an auth failure carries its status, which is what routes it to the auth bucket', async () => {

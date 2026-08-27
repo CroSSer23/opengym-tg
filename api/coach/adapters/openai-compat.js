@@ -73,7 +73,11 @@ const OPTIONAL_FIELDS = ['temperature', 'max_tokens', 'response_format'];
 /** Which optional field is this 400 complaining about? Null when it is a real error. */
 export function offendingField(status, body) {
   if (status !== 400 && status !== 422) return null;
-  const t = String(body || '').toLowerCase();
+  // A 400 often ends with a list of what the endpoint *does* accept. Matching a field name
+  // inside that list read "Accepted parameters are: ... temperature, max_tokens" as a
+  // rejection of both, and the memo below then remembered it for the life of the process.
+  const t = String(body || '').toLowerCase()
+    .replace(/\b(accepted|supported|allowed|valid|permitted|recognized|recognised|known)\s+(request\s+)?(parameters?|fields?|options?|arguments?|properties)\b[^.!?\n]*/g, ' ');
   // max_completion_tokens is the successor field; a server naming it is rejecting max_tokens.
   if (/max_tokens|max_completion_tokens/.test(t)) return 'max_tokens';
   if (/temperature/.test(t)) return 'temperature';
