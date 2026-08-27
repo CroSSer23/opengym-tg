@@ -191,7 +191,7 @@ export default function Settings() {
         <div className="swatches">
           {Object.entries(ACCENTS).map(([k, c]) => (
             <button key={k} className={'swatch' + ((S.accent || 'lime') === k ? ' on' : '')}
-              style={{ background: c }} onClick={() => update(s => { s.accent = k })} aria-label={k} />
+              style={{ background: c }} onClick={() => update(s => { s.accent = k })} aria-label={t(k)} />
           ))}
         </div>
       </div>
@@ -223,7 +223,7 @@ export default function Settings() {
 
     <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
       openGym · {t('free & open source (AGPL v3)')}<br />
-      <a href="https://github.com/DuarteSantos8/openGym" target="_blank" rel="noopener">{t('source code')}</a> · exercise data: hasaneyldrm/exercises-dataset (CC)
+      <a href="https://github.com/DuarteSantos8/openGym" target="_blank" rel="noopener">{t('source code')}</a> · {t('exercise data')}: hasaneyldrm/exercises-dataset (CC)
     </div>
   </div>
 }

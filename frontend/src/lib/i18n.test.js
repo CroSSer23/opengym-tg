@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
-import { LANGS, INSTR_LANGS } from './i18n.js'
+import { LANGS, INSTR_LANGS, setLang, tn } from './i18n.js'
 
 const SRC = path.resolve(__dirname, '..')
 const LOCALES = path.join(SRC, 'locales')
@@ -73,6 +73,35 @@ describe('placeholders survive translation', () => {
       expect(broken).toEqual([])
     })
   }
+})
+
+describe('plural categories', () => {
+  // English picks between two forms; Ukrainian needs a third for 2-4, which lives under
+  // "<key>#few". A language without the variant falls back to the two-form key.
+  it('uses the English pair when that is all a language has', async () => {
+    await setLang('en')
+    expect(tn(1, '{0} exercise', '{0} exercises')).toBe('1 exercise')
+    expect(tn(2, '{0} exercise', '{0} exercises')).toBe('2 exercises')
+    expect(tn(0, '{0} exercise', '{0} exercises')).toBe('0 exercises')
+  })
+
+  it('picks the Ukrainian few-form for 2, 3 and 4', async () => {
+    await setLang('uk')
+    expect(tn(1, '{0} exercise', '{0} exercises')).toBe('1 вправа')
+    expect(tn(2, '{0} exercise', '{0} exercises')).toBe('2 вправи')
+    expect(tn(4, '{0} exercise', '{0} exercises')).toBe('4 вправи')
+    expect(tn(5, '{0} exercise', '{0} exercises')).toBe('5 вправ')
+    expect(tn(22, '{0} exercise', '{0} exercises')).toBe('22 вправи')
+    await setLang('en')
+  })
+
+  it('falls back to the plural key where a language carries no variant', async () => {
+    await setLang('zh')
+    // Chinese has one form for every count, so both calls land on the same string.
+    expect(tn(1, '{0} exercise', '{0} exercises')).toBe(tn(1, '{0} exercise', '{0} exercise'))
+    expect(tn(7, '{0} exercise', '{0} exercises')).toBeTruthy()
+    await setLang('en')
+  })
 })
 
 describe('Ukrainian', () => {
