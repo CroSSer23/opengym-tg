@@ -5,16 +5,18 @@
 // language, from the upstream dataset) — also lazy-loaded on language switch.
 import { useSyncExternalStore } from 'react'
 
-// UI languages. de/pt have no instruction pack upstream — instructions fall back to English.
+// UI languages. Ukrainian sits second because this fork is maintained in Ukraine; the rest
+// keep upstream's order. de/pt/uk have no instruction pack in the upstream dataset, so
+// exercise instructions fall back to English until a pack exists for them.
 export const LANGS = {
-  en: 'English', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano',
-  pt: 'Português', pl: 'Polski', tr: 'Türkçe', ru: 'Русский', zh: '中文',
-  ko: '한국어', hi: 'हिन्दी'
+  en: 'English', uk: 'Українська', de: 'Deutsch', es: 'Español', fr: 'Français',
+  it: 'Italiano', pt: 'Português', pl: 'Polski', tr: 'Türkçe', ru: 'Русский',
+  zh: '中文', ko: '한국어', hi: 'हिन्दी'
 }
 export const INSTR_LANGS = ['en', 'es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko']
 const DATE_LOCALES = {
-  en: 'en-GB', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-PT',
-  pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN'
+  en: 'en-GB', uk: 'uk-UA', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT',
+  pt: 'pt-PT', pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN'
 }
 
 const localePacks = import.meta.glob('../locales/*.js')
