@@ -21,6 +21,11 @@ export const PLATES = {
 }
 
 const round2 = v => Math.round(v * 100) / 100
+// Every denomination is a whole number of grams, so the search runs in grams. Rounding each
+// intermediate remainder to two decimals instead put 40.625 kg per side at 40.63 and reported
+// a 101.25 kg bar as "99.99 loaded, 1.26 left over" - two numbers with no physical meaning.
+const GRAMS = 1000
+const grams = v => Math.round(v * GRAMS)
 
 /**
  * Break a total down into what goes on each side.
@@ -33,17 +38,16 @@ const round2 = v => Math.round(v * 100) / 100
 export function plateBreakdown(total, { unit = 'kg', bar = DEFAULT_BAR[unit], plates = PLATES[unit] } = {}) {
   const target = Number(total) || 0
   if (target < bar) return { bar, ok: false, reason: 'below-bar', perSide: [], loaded: bar, leftover: round2(bar - target) }
-  let side = round2((target - bar) / 2)
+  let side = Math.round((target - bar) * GRAMS / 2)
   const perSide = []
   for (const p of plates) {
-    // Floating point: 62.5 - 25 - 25 lands on 12.499999999999998 without the rounding, and
-    // the last 1.25 disc silently disappears.
+    const disc = grams(p)
     let n = 0
-    while (round2(side - p) >= 0) { side = round2(side - p); n++ }
+    while (side - disc >= 0) { side -= disc; n++ }
     if (n) perSide.push({ plate: p, count: n })
   }
-  const loaded = round2(bar + (target - bar - side * 2))
-  return { bar, ok: side === 0, perSide, loaded, leftover: round2(side * 2) }
+  const leftover = round2(side * 2 / GRAMS)
+  return { bar, ok: side === 0, perSide, loaded: round2(target - leftover), leftover }
 }
 
 /** "25 + 20 + 2.5" — the side of the bar, read left to right the way you load it. */

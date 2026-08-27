@@ -68,6 +68,19 @@ describe('plateBreakdown', () => {
     expect(odd.loaded).toBe(100)
   })
 
+  it('keeps an odd 1.25 kg remainder exact', () => {
+    // (101.25 - 20) / 2 is 40.625 per side, and no disc makes the last 0.625. Rounding each
+    // intermediate remainder to two decimals used to report 99.99 loaded with 1.26 left over.
+    const b = plateBreakdown(101.25, { bar: 20 })
+    expect(b.ok).toBe(false)
+    expect(side(b)).toEqual([[25, 1], [15, 1]])
+    expect(b.loaded).toBe(100)
+    expect(b.leftover).toBe(1.25)
+    // The loadable neighbour either side stays exact too.
+    expect(plateBreakdown(102.5, { bar: 20 })).toMatchObject({ ok: true, loaded: 102.5, leftover: 0 })
+    expect(plateBreakdown(61.25, { bar: 20 })).toMatchObject({ ok: false, loaded: 60, leftover: 1.25 })
+  })
+
   it('has a sane default bar and plate set per unit', () => {
     expect(DEFAULT_BAR.kg).toBe(20)
     expect(DEFAULT_BAR.lb).toBe(45)

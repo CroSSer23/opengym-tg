@@ -447,6 +447,34 @@ describe('targetState', () => {
 
 /* ---------------- 5/3/1 ---------------- */
 
+describe('5/3/1 cycle window', () => {
+  // The cycle counts sessions logged since tmFrom. Without that date every reps session the
+  // lifter ever logged counts, which drops a first-time 5/3/1 user into the middle of a cycle
+  // they never ran and inflates the training max — so the exercise sheet stamps tmFrom on
+  // save whether or not a training max was typed in.
+  const history = n => ({
+    unit: 'kg', routines: [], customEx: [], exWeights: {},
+    workouts: Array.from({ length: n }, (_, i) => ({
+      d: '2026-0' + (i + 1) + '-01',
+      entries: [{ id: '0025', mode: 'reps', sets: [{ w: 100, r: 5, done: true }] }]
+    }))
+  })
+  const cfg = { id: '0025', sets: 3, reps: 5, mode: 'reps', prog: '531' }
+
+  it('starts a fresh cycle from the date the training max was set', () => {
+    const S = history(5)
+    const stamped = { ...cfg, tmFrom: '2026-12-01' }
+    expect(cycleWeek(S, stamped)).toBe(0)
+    expect(trainingMax(S, stamped, 2.5)).toBe(baseTrainingMax(S, stamped))
+  })
+
+  it('counts only the sessions logged since then', () => {
+    const S = history(5)
+    const mid = { ...cfg, tmFrom: '2026-03-01' }   // leaves the March, April and May sessions
+    expect(cycleWeek(S, mid)).toBe(3)
+  })
+})
+
 describe('5/3/1', () => {
   // A bench (upper body) so the increment is 2.5 kg, and a training max round enough that the
   // percentages are checkable by hand.

@@ -675,7 +675,11 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine }) {
         // tmFrom is what makes the cycle countable: it is the date sessions start counting
         // from, so changing the training max restarts the cycle rather than landing you in
         // week three of a cycle you never ran.
-        if (c.tm > 0) { out.tm = c.tm; out.tmFrom = c.tmFrom || todayISO() }
+        // Stamped whether or not a training max was typed in: with tmFrom missing, an auto
+        // training max counted every reps session ever logged for the lift, so a first-time
+        // 5/3/1 user landed in week three of a cycle they never ran, off an inflated max.
+        out.tmFrom = c.tmFrom || todayISO()
+        if (c.tm > 0) out.tm = c.tm
         out.sets = Math.max(3, sets)
       }
       onSave(out)
