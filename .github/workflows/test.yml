@@ -35,9 +35,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            api/package-lock.json
       - run: npm ci
         working-directory: frontend
+      # src/lib/coach.test.js imports api/coach/payload.js and api/coach/jobs.js directly, to
+      # check the client's fingerprint logic against the server's actual source rather than a
+      # transcription. That import chain reaches coach/adapters/claude.js, which loads
+      # @anthropic-ai/claude-agent-sdk at module scope — so this job needs the API's deps too.
+      - run: npm ci
+        working-directory: api
       - run: npm test
         working-directory: frontend
       # A broken import or bad JSX fails the build long before any test covers it.
