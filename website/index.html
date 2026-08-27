@@ -3,13 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>openGym — free, open-source gym &amp; body-weight tracker</title>
-<meta name="description" content="openGym is a free, open-source gym & body-weight tracker. Download the Android app or self-host it with Docker — no account, no cloud, no telemetry.">
-<meta name="theme-color" content="#0c0e12">
-<meta property="og:title" content="openGym — your workouts, your weights, your data">
-<meta property="og:description" content="Free, open-source gym & body-weight tracker. Android APK or self-hosted with Docker. No account, no cloud, no telemetry.">
-<meta property="og:image" content="https://opengym.duarte-santos.ch/img/banner.png">
-<meta property="og:url" content="https://opengym.duarte-santos.ch/">
+<title>openGym - a self-hosted training log with a Telegram app</title>
+<meta name="description" content="A self-hosted gym and body-weight tracker. Runs as a Telegram Mini App, coaches from an AI endpoint you choose, and keeps every workout on your own server. AGPL, no telemetry.">
+<meta name="theme-color" content="#0a0b0b">
+<meta property="og:title" content="openGym - your training log, on your own server">
+<meta property="og:description" content="A self-hosted gym and body-weight tracker with a Telegram Mini App and an AI coach that runs on your own endpoint.">
 <meta property="og:type" content="website">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="icon" type="image/png" sizes="180x180" href="icon-180.png">
@@ -17,172 +15,214 @@
 <link rel="stylesheet" href="styles.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"openGym",
- "operatingSystem":"Android, Web","applicationCategory":"HealthApplication",
+ "operatingSystem":"Web, Android, iOS","applicationCategory":"HealthApplication",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
  "license":"https://www.gnu.org/licenses/agpl-3.0.html",
- "url":"https://opengym.duarte-santos.ch/",
- "downloadUrl":"https://opengym.duarte-santos.ch/openGym.apk",
- "author":{"@type":"Person","name":"Duarte Santos","url":"https://duarte-santos.ch"}}
+ "codeRepository":"https://github.com/CroSSer23/opengym-tg",
+ "isBasedOn":"https://github.com/DuarteSantos8/openGym"}
 </script>
 </head>
 <body>
 
 <nav><div class="wrap nav-in">
-  <a class="brand" href="/">
-    <img src="icon-180.png" alt="" width="26" height="26" style="border-radius:6px">
-    openGym
-  </a>
+  <a class="brand" href="/">openGym</a>
   <div class="nav-links">
-    <a href="#features" class="hide-s">Features</a>
-    <a href="#screens" class="hide-s">Screenshots</a>
-    <a href="#demo" class="hide-s">Demo</a>
+    <a href="#adds" class="hide-s">What this fork adds</a>
+    <a href="#boundary" class="hide-s">The Coach</a>
+    <a href="#selfhost">Self-host</a>
     <a href="docs.html">Docs</a>
     <a href="about.html" class="hide-s">About</a>
-    <a href="https://github.com/DuarteSantos8/openGym" rel="noopener"><span data-gh="stars">GitHub</span></a>
-    <a class="cta" href="#download">Download</a>
+    <a class="cta" href="https://github.com/CroSSer23/opengym-tg" rel="noopener"><span data-gh="stars">Source</span></a>
   </div>
 </div></nav>
 
-<header class="hero"><div class="wrap">
-  <div class="logo">
-    <img src="icon-512.png" alt="openGym icon" width="108" height="108" style="border-radius:26px">
+<header class="hero"><div class="wrap hero-in">
+  <div>
+    <h1>Your training log, on your own server.</h1>
+    <p class="sub">A gym tracker you self-host, with a Telegram app, an AI coach on your own
+       endpoint, and no telemetry.</p>
+    <div class="hero-btns">
+      <a class="btn" href="#selfhost">Self-host it</a>
+      <a class="btn ghost" href="https://github.com/CroSSer23/opengym-tg" rel="noopener">Read the source</a>
+    </div>
   </div>
-  <h1>openGym</h1>
-  <p class="tag">Your workouts. Your weights. Your data.</p>
-  <p class="sub">A free, open-source gym &amp; body-weight tracker.
-     No subscription, no account required, no telemetry — ever.</p>
-  <div class="hero-btns">
-    <a class="btn" href="#download">Get openGym</a>
-    <a class="btn ghost" href="#demo">Try the live demo</a>
-    <a class="btn ghost" href="https://github.com/DuarteSantos8/openGym" rel="noopener">GitHub <span class="ct" data-gh="stars">★</span></a>
+
+  <!-- Not a screenshot: the app's own target readout, rendered by the same CSS the app uses.
+       A prescribed set is drawn as an outline, and landing it fills the outline in. -->
+  <div class="panel">
+    <div class="panel-h"><span class="unit">Target</span><span class="unit faint">bench press</span></div>
+    <div class="tgt">
+      <span class="gt hit">3</span><span class="op">&times;</span>
+      <span class="gt hit">8</span><span class="op">@</span>
+      <span class="gt hit">42.5</span><span class="unit">kg</span>
+    </div>
+    <ol class="setlist">
+      <li><span class="n">1</span><span class="v">42.5 &times; 8</span><span class="tag ok">hit</span></li>
+      <li><span class="n">2</span><span class="v">42.5 &times; 8</span><span class="tag ok">hit</span></li>
+      <li><span class="n">3</span><span class="v">42.5 &times; 8</span><span class="tag ok">hit</span></li>
+    </ol>
+    <p class="panel-f">Every set is a number the app asked for. Landing it fills the outline;
+       coming up short leaves it open in orange. You know how the session went before you read it.</p>
   </div>
 </div></header>
 
-<section id="features"><div class="wrap">
-  <p class="kicker">Everything a training log needs</p>
-  <h2>Built in the gym, not in a boardroom</h2>
-  <p class="lead">Every feature exists because it was needed on the gym floor — nothing is
-     there to sell you anything.</p>
-  <div class="grid">
-    <div class="feat"><div class="ic">▶️</div><h3>Guided workouts</h3><p>Knows what day it is, starts today's session, pre-fills your weights from last time, times your rest, spots PRs.</p></div>
-    <div class="feat"><div class="ic">🏋️</div><h3>1,324 exercises</h3><p>Searchable library with animated demos, filterable by body part and the equipment you actually own — plus your own custom exercises.</p></div>
-    <div class="feat"><div class="ic">🗓️</div><h3>Weekly plan</h3><p>A routine per weekday, and any day can be rescheduled when life happens — without touching the plan.</p></div>
-    <div class="feat"><div class="ic">⚖️</div><h3>Body weight &amp; goal</h3><p>Interactive chart with your goal line; every change is colored by whether it moves toward it.</p></div>
-    <div class="feat"><div class="ic">💪</div><h3>Muscle map</h3><p>A body diagram shaded by how much work each muscle got — and which ones got nothing.</p></div>
-    <div class="feat"><div class="ic">🟩</div><h3>Activity heatmap</h3><p>A GitHub-style year view of your training time. Streaks included.</p></div>
-    <div class="feat"><div class="ic">📈</div><h3>Progression that follows a rule</h3><p>Linear, Greyskull LP, double progression or added time — per routine, overridable per exercise. Your weights are already right when the session opens, and every target tells you why.</p></div>
-    <div class="feat"><div class="ic">⏱️</div><h3>Timed sets</h3><p>Planks, hangs and carries are logged by time, with a timer for the set itself. Stop early and it logs what you actually held.</p></div>
-    <div class="feat"><div class="ic">🧮</div><h3>Estimated 1RM</h3><p>Per exercise, from your best eligible set — and it names which one. Won't guess above 12 reps.</p></div>
-    <div class="feat"><div class="ic">🔗</div><h3>Supersets &amp; cardio</h3><p>Pair exercises back-to-back with one rest, and log time + speed where weight × reps makes no sense.</p></div>
-    <div class="feat"><div class="ic">📤</div><h3>Share a plan</h3><p>Send someone your routines as a small file — no workouts, no weigh-ins — or print it as a clean PDF. Importing merges, never overwrites.</p></div>
-    <div class="feat"><div class="ic">🎯</div><h3>Effort per set</h3><p>Rate a set as RIR or RPE — whichever scale you already think in. Optional, and every set keeps the scale it was logged with.</p></div>
-    <div class="feat"><div class="ic">☀️</div><h3>Screen stays awake</h3><p>No unlocking the phone between sets. The screen stays lit while a workout runs, and lets go the moment you finish.</p></div>
-    <div class="feat"><div class="ic">📥</div><h3>Bring your history</h3><p>Import from FitNotes, Strong, Hevy — including the RPE they recorded — or body weight straight out of an Apple Health export.</p></div>
-    <div class="feat"><div class="ic">🌍</div><h3>12 languages</h3><p>Full UI translation, exercise instructions in 10 languages, loaded on demand.</p></div>
-    <div class="feat"><div class="ic">🔑</div><h3>Passkeys, not passwords</h3><p>Self-hosted profiles sign in with Face ID / fingerprint. Each person's data stays their own.</p></div>
-    <div class="feat"><div class="ic">🎨</div><h3>Designed, not assembled</h3><p>Light &amp; dark themes, 8 accent colors, a hand-drawn icon set. Looks the same on every phone.</p></div>
-    <div class="feat"><div class="ic">📦</div><h3>Yours to keep</h3><p>One-tap JSON export and import. Your training log is a file you own, not a row in someone's cloud.</p></div>
+<section id="adds"><div class="wrap two">
+  <div>
+    <p class="kicker">What this fork adds</p>
+    <h2>Three things upstream does not do</h2>
+    <p class="lead">Everything else here is openGym as its author built it. These are the parts
+       this fork exists for.</p>
   </div>
-</div></section>
-
-<section id="screens"><div class="wrap">
-  <p class="kicker">Screenshots</p>
-  <h2>Five screens, zero clutter</h2>
-  <div class="shots">
-    <figure><img src="img/home.png" alt="openGym home screen with weekly overview and body-weight chart" loading="lazy" width="1170" height="2532"><figcaption>Home</figcaption></figure>
-    <figure><img src="img/workout.png" alt="Guided workout screen with sets, rest timer and pre-filled weights" loading="lazy" width="1170" height="2532"><figcaption>Workout</figcaption></figure>
-    <figure><img src="img/stats.png" alt="Stats screen with activity heatmap and charts" loading="lazy" width="1170" height="2532"><figcaption>Stats</figcaption></figure>
-    <figure><img src="img/plan.png" alt="Weekly plan screen with routines per weekday" loading="lazy" width="1170" height="2532"><figcaption>Plan</figcaption></figure>
-    <figure><img src="img/library.png" alt="Exercise library with search and filters" loading="lazy" width="1170" height="2532"><figcaption>Library</figcaption></figure>
-  </div>
-</div></section>
-
-<section id="demo"><div class="wrap">
-  <p class="kicker">Live demo</p>
-  <h2>Try it right here</h2>
-  <p class="lead">This is the real app with seeded example data, running in your browser —
-     poke around, start a workout, change anything.</p>
-  <div class="demo-wrap">
-    <div class="phone"><iframe src="https://duartesantos8.github.io/openGym/" title="openGym live demo" loading="lazy"></iframe></div>
-  </div>
-  <p class="demo-note">Demo data lives only in this browser tab-family and can be reset in its
-     Settings. Prefer a full window? <a href="https://duartesantos8.github.io/openGym/" rel="noopener">Open the demo full-screen →</a></p>
-</div></section>
-
-<section id="download"><div class="wrap">
-  <p class="kicker">Get openGym</p>
-  <h2>One app, two flavors</h2>
-  <p class="lead">Same codebase, your choice of where the data lives: entirely on your phone,
-     or on a server you control.</p>
-  <div class="duo">
-    <div class="card hl">
-      <h3>📱 Mobile app</h3>
-      <p class="for">For anyone — install and you're done.</p>
-      <ul>
-        <li>Everything stays on your phone</li>
-        <li>No account, no server, no setup</li>
-        <li>Native workout-day reminders</li>
-        <li>Backups via the share sheet</li>
-        <li class="no">No cross-device sync</li>
-      </ul>
-      <a class="btn" href="openGym.apk" download>Download for Android</a>
-      <p class="meta">v1.2.3 · 4.3 MB · Android 6.0+ · signed APK, sideload (your browser will ask — that's normal outside the Play Store)</p>
-      <p class="meta"><b>iPhone?</b> Apple doesn't allow installs outside the App Store — use the
-         self-hosted version as a home-screen app instead, or see <a href="docs.html#iphone">the docs</a>.</p>
+  <div class="ruled">
+    <div>
+      <h3>It runs inside Telegram</h3>
+      <p>The whole tracker as a Mini App, opened from your own bot. Your Telegram account is the
+         sign-in, so there is nothing to create and nothing to remember, and rest timers,
+         workout reminders and coach proposals arrive as messages. On iOS that is the only
+         notification channel a Mini App has.</p>
     </div>
-    <div class="card">
-      <h3>🖥️ Self-hosted</h3>
-      <p class="for">For homelabbers — and their friends &amp; family.</p>
-      <ul>
-        <li>Sync across all your devices</li>
-        <li>Passkey profiles for multiple people</li>
-        <li>Your data readable on the desktop</li>
-        <li>Works as a home-screen app on iPhone &amp; Android</li>
-        <li>One <code>docker compose up</code></li>
-      </ul>
-      <a class="btn ghost" href="docs.html#selfhost">Self-hosting guide</a>
-      <p class="meta">AGPL-3.0 · prebuilt images for amd64 + arm64</p>
+    <div>
+      <h3>The AI coach runs on your endpoint</h3>
+      <p>Point it at anything that speaks <code>/chat/completions</code>: OpenAI, OpenRouter, a
+         LiteLLM or vLLM gateway, or an Ollama on your own network. No vendor CLI, no account
+         with anybody in particular.</p>
+    </div>
+    <div>
+      <h3>5/3/1, and the rest of the roadmap</h3>
+      <p>Percentage programming off a training max, three more starter plans, body measurements,
+         a plate calculator and per-exercise notes. All of it was on the upstream roadmap and
+         none of it was written yet.</p>
     </div>
   </div>
 </div></section>
 
-<section id="story"><div class="wrap">
-  <div class="story">
-    <p class="kicker">Why openGym exists</p>
-    <blockquote>openGym started as <strong>a tiny app I built for myself</strong> — I just wanted to
-      log my workouts and weight without a subscription app claiming my training data.
-      Then friends wanted in, then it grew a mind of its own.</blockquote>
-    <p class="who">— Duarte Santos · <a href="about.html">read the whole story →</a></p>
+<section id="boundary"><div class="wrap">
+  <h2>The AI designs the plan. It never picks the weight.</h2>
+  <p class="lead">The split is the whole design, and it is the reason an AI is safe to have here
+     at all. Judgement and arithmetic live in different places, and the model never crosses into
+     the arithmetic.</p>
+  <div class="scroller">
+    <table class="tbl">
+      <caption>Where each decision is made</caption>
+      <thead><tr><th>The Coach, where judgement lives</th><th>The Engine, where the maths lives</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">Writes your weekly routines</td><td class="dim">Computes tomorrow's bar weight</td></tr>
+        <tr><td class="dim">Chooses a progression rule</td><td class="dim">Applies it, the same way every time</td></tr>
+        <tr><td class="dim">Reads your effort ratings and stalls</td><td class="dim">Counts hits and misses strictly</td></tr>
+        <tr><td class="dim">Swaps an exercise that is not working</td><td class="dim">Owns every load you actually lift</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="lead" style="margin-top:22px">If the endpoint times out or the provider disappears,
+     the engine carries on offline without missing a session. Proposals are inert until you
+     accept them one by one, applying takes a snapshot first, and one tap puts it back.</p>
+</div></section>
+
+<section id="progression"><div class="wrap two">
+  <div>
+    <h2>Five rules, and every target says why</h2>
+    <p class="lead">Pick one per routine, override it per exercise. Your weights are already
+       right when the session opens.</p>
+    <p class="lead" style="margin-top:14px;font-size:15px">5/3/1 runs the table below off a
+       training max, about 90% of a real one. Work weights round down, because a percentage is
+       a ceiling. The last set of the first three weeks is taken for as many reps as you have.</p>
+  </div>
+  <div class="scroller">
+    <table class="tbl">
+      <caption>One 5/3/1 cycle, as percentages of the training max</caption>
+      <thead><tr><th>Week</th><th>Set 1</th><th>Set 2</th><th>Top set</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">1</td><td class="fig">65% &times; 5</td><td class="fig">75% &times; 5</td><td class="fig">85% &times; 5+</td></tr>
+        <tr><td class="dim">2</td><td class="fig">70% &times; 3</td><td class="fig">80% &times; 3</td><td class="fig">90% &times; 3+</td></tr>
+        <tr><td class="dim">3</td><td class="fig">75% &times; 5</td><td class="fig">85% &times; 3</td><td class="fig">95% &times; 1+</td></tr>
+        <tr><td class="dim">4</td><td class="fig">40% &times; 5</td><td class="fig">50% &times; 5</td><td class="fig">60% &times; 5</td></tr>
+      </tbody>
+    </table>
+    <p class="panel-f">Then the training max goes up and the cycle starts again. The week you are
+       in is counted from your log, so correcting a mistyped session moves the cycle with it.</p>
   </div>
 </div></section>
 
-<section id="opensource"><div class="wrap">
+<section id="selfhost"><div class="wrap two">
+  <div>
+    <h2>One command, and it is yours</h2>
+    <p class="lead">Docker with Compose is the only requirement. The frontend builds inside the
+       image, so you do not need Node, and the first run downloads the exercise media once.</p>
+    <p class="lead" style="margin-top:14px;font-size:15px">Your data lives in <code>./data</code>
+       on your own disk: profiles, plans, every logged set, your weight. Back up that folder and
+       you have backed up everything.</p>
+    <div class="hero-btns">
+      <a class="btn" href="docs.html#selfhost">Self-host it</a>
+    </div>
+  </div>
+  <div>
+<pre><code>git clone https://github.com/CroSSer23/opengym-tg
+cd opengym-tg
+cp .env.example .env
+docker compose up -d</code></pre>
+    <p class="panel-f">Open <code>http://localhost:8080</code> and create a profile. For passkeys
+       and for the Telegram Mini App you need an HTTPS domain, which is two lines in
+       <code>.env</code>.</p>
+  </div>
+</div></section>
+
+<section id="rest"><div class="wrap">
+  <h2>The tracker underneath</h2>
+  <p class="lead">All of this is upstream openGym, which is most of what makes the app worth
+     self-hosting in the first place.</p>
+  <div class="cols3">
+    <p><b>Guided workouts</b> It knows what day it is, pre-fills your weights from last time,
+       times your rest and spots PRs.</p>
+    <p><b>1,324 exercises</b> Searchable, with animated demos, filtered by the equipment you
+       actually own. Add your own.</p>
+    <p><b>Weekly plan</b> A routine per weekday, and any day can be moved when life happens.</p>
+    <p><b>Body weight and goal</b> A chart with your goal line, every change coloured by whether
+       it moves toward it.</p>
+    <p><b>Muscle map</b> A body diagram shaded by how much work each muscle got, and which ones
+       got none.</p>
+    <p><b>Activity heatmap</b> A year of training at a glance, shaded by time spent.</p>
+    <p><b>Estimated 1RM</b> Per exercise, from your best eligible set, and it names which one.</p>
+    <p><b>Supersets and cardio</b> Pair lifts back to back with one rest, and log time and speed
+       where reps make no sense.</p>
+    <p><b>Effort per set</b> RIR or RPE, whichever scale you already think in. Optional.</p>
+    <p><b>Timed sets</b> Planks, hangs and carries logged by time, with a timer for the hold
+       itself.</p>
+    <p><b>Bring your history</b> Import from FitNotes, Strong and Hevy, or body weight from an
+       Apple Health export.</p>
+    <p><b>Passkeys, not passwords</b> Face ID or a fingerprint, and a separate profile per person
+       in the house.</p>
+  </div>
+</div></section>
+
+<section id="source"><div class="wrap">
   <p class="kicker">Open source</p>
-  <h2>AGPL-licensed, forever</h2>
-  <p class="lead">The code is public, the license keeps every fork open, and there is no
-     commercial version waiting behind a curtain. If openGym is useful to you,
-     a ⭐ on GitHub helps more people find it.</p>
+  <h2>AGPL, and a fork that says so</h2>
+  <p class="lead">openGym was written by <a href="https://github.com/DuarteSantos8/openGym" rel="noopener">Duarte
+     Santos</a>, who open-sourced it under the AGPL. The AI Coach came from
+     <a href="https://github.com/alexpcosta/opengym" rel="noopener">a fork by Alex Costa</a>.
+     This is a further fork: the Telegram Mini App, the endpoint-driven Coach, the redesign and
+     the remaining roadmap items are the changes made here. Everything else is their work, and
+     the licence keeps all of it open.</p>
   <div class="os">
-    <div class="stat"><b data-gh="stars-n">–</b><span>GitHub stars</span></div>
-    <div class="stat"><b data-gh="forks-n">–</b><span>forks</span></div>
-    <div class="stat"><b data-gh="issues-n">–</b><span>open issues</span></div>
+    <div class="stat"><b data-gh="stars-n">-</b><span>stars</span></div>
+    <div class="stat"><b data-gh="forks-n">-</b><span>forks</span></div>
     <div class="stat"><b>1,324</b><span>exercises</span></div>
     <div class="stat"><b>12</b><span>languages</span></div>
+    <div class="stat"><b>0</b><span>trackers</span></div>
   </div>
-  <div class="hero-btns" style="justify-content:flex-start;margin-top:24px">
-    <a class="btn ghost" href="https://github.com/DuarteSantos8/openGym" rel="noopener">openGym on GitHub</a>
-    <a class="btn ghost" href="https://github.com/DuarteSantos8/openGym/blob/main/CONTRIBUTING.md" rel="noopener">Contributing</a>
-    <a class="btn ghost" href="https://github.com/DuarteSantos8/openGym/blob/main/CHANGELOG.md" rel="noopener">Changelog</a>
+  <div class="hero-btns" style="margin-top:26px">
+    <a class="btn ghost" href="https://github.com/CroSSer23/opengym-tg" rel="noopener">This fork on GitHub</a>
+    <a class="btn ghost" href="https://github.com/DuarteSantos8/openGym" rel="noopener">The original</a>
   </div>
 </div></section>
 
 <footer><div class="wrap foot">
-  <span>openGym · AGPL-3.0 · © 2026 <a href="https://duarte-santos.ch" rel="noopener">Duarte Santos</a></span>
+  <span>openGym &middot; AGPL-3.0 &middot; a fork of
+    <a href="https://github.com/DuarteSantos8/openGym" rel="noopener">DuarteSantos8/openGym</a></span>
   <div class="links">
     <a href="docs.html">Docs</a>
-    <a href="about.html" class="hide-s">About</a>
-    <a href="https://github.com/DuarteSantos8/openGym" rel="noopener">GitHub</a>
-    <a href="https://duartesantos8.github.io/openGym/" rel="noopener">Live demo</a>
+    <a href="about.html">About</a>
+    <a href="https://github.com/CroSSer23/opengym-tg" rel="noopener">GitHub</a>
   </div>
 </div></footer>
 
