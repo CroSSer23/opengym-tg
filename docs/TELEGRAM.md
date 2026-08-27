@@ -1,6 +1,6 @@
-# openGym in Telegram
+# LiftMate in Telegram
 
-openGym can run as a **Telegram Mini App**: the same tracker, opened from a chat, signed in by
+LiftMate can run as a **Telegram Mini App**: the same tracker, opened from a chat, signed in by
 your Telegram account, with the alerts it already sends arriving as messages instead of browser
 push. It is off unless you give the api container a bot token.
 
@@ -22,7 +22,7 @@ every Telegram route answers 503, and not one byte of Telegram UI renders anywhe
 **1. Make a bot.** Message [@BotFather](https://t.me/BotFather), send `/newbot`, answer the two
 questions, and keep the token it gives you. It looks like `8012345678:AAH…`.
 
-**2. Give it to openGym.** In your `.env`:
+**2. Give it to LiftMate.** In your `.env`:
 
 ```bash
 TELEGRAM_BOT_TOKEN=8012345678:AAHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -84,7 +84,7 @@ Some consequences worth knowing:
   id and walk into any profile on the instance. Treat it like the session secret; if it leaks,
   revoke it in BotFather and set the new one.
 - **Telegram ids are a lookup key, never an identity.** They are public and guessable, so a
-  profile created from Telegram still gets openGym's own random id, and nothing else in the app
+  profile created from Telegram still gets LiftMate's own random id, and nothing else in the app
   hangs off the Telegram number.
 - **A launch expires after 24 hours.** Not sooner: Telegram fixes `initData` for the lifetime of
   a Mini App session, and a tighter window would sign people out mid-workout. The session cookie
@@ -106,7 +106,7 @@ channel is independent and stays as it was.
 The container asks Telegram for updates rather than being called back. A webhook needs a publicly
 resolvable HTTPS URL that works *before* anyone has signed in, plus a secret header and a route to
 guard — and when any of that is subtly wrong, the symptom is a bot that silently never answers.
-Long polling works wherever outbound HTTPS works, which is the same bar the rest of openGym sets.
+Long polling works wherever outbound HTTPS works, which is the same bar the rest of LiftMate sets.
 
 The cost is one held-open request at a time, and one rule: **only one process may poll a bot
 token.** Run two api containers against one bot and Telegram answers 409; the log says so in
@@ -120,4 +120,4 @@ those words rather than backing off quietly.
 | Bot answers `/start` with "Telegram will only open a Mini App over HTTPS" | `TELEGRAM_WEBAPP_URL` (or `ORIGIN`) is `http://`. |
 | `another process is polling this bot token (409)` | A second container, or a webhook still registered on the bot. One poller only. |
 | The Mini App opens on the sign-in screen instead of Home | The launch was refused — usually invite-only with no code, or a clock more than five minutes ahead of real time. |
-| Notifications stop arriving | Blocking the bot makes Telegram answer 403; openGym drops the link and Settings shows "Not linked". Send `/start` again and re-link. |
+| Notifications stop arriving | Blocking the bot makes Telegram answer 403; LiftMate drops the link and Settings shows "Not linked". Send `/start` again and re-link. |

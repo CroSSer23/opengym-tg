@@ -1,4 +1,4 @@
-# openGym × CLI AI — functional plan
+# LiftMate × CLI AI — functional plan
 
 **Feature:** AI-assisted plan creation and feedback-driven plan recalculation, via a locally-run CLI agent
 **Status:** Draft for review — functional description first; the technical plan follows once this is agreed
@@ -31,7 +31,7 @@
 
 ## 1. Summary
 
-openGym today takes a lifter from "I joined a gym" to "I logged my 100th session": a manual plan builder over a 1,324-exercise library, one starter plan (Push/Pull/Legs), guided workouts that pre-fill targets, and a deterministic progression engine that adjusts loads with a visible *why*. What it cannot do is **design**. It will faithfully progress whatever plan you gave it, but it has no opinion on whether that plan fits your goal, schedule, equipment or the feedback you have been logging for weeks — the per-set effort ratings (RIR/RPE) are, by the app's own admission, read by nothing.
+LiftMate today takes a lifter from "I joined a gym" to "I logged my 100th session": a manual plan builder over a 1,324-exercise library, one starter plan (Push/Pull/Legs), guided workouts that pre-fill targets, and a deterministic progression engine that adjusts loads with a visible *why*. What it cannot do is **design**. It will faithfully progress whatever plan you gave it, but it has no opinion on whether that plan fits your goal, schedule, equipment or the feedback you have been logging for weeks — the per-set effort ratings (RIR/RPE) are, by the app's own admission, read by nothing.
 
 This change adds an **AI Coach**, powered by a **CLI agent running locally on the instance owner's machine** (Claude Code CLI, Gemini CLI or OpenAI Codex CLI — pluggable), with two jobs:
 
@@ -48,7 +48,7 @@ These extend the values already in the codebase and README, and every requiremen
 
 | # | Principle | Consequence |
 |---|-----------|-------------|
-| P1 | **Your box, your data.** | The AI agent runs as a CLI on the self-hosted instance, configured by its owner. openGym itself gains no cloud dependency and no bundled API keys. |
+| P1 | **Your box, your data.** | The AI agent runs as a CLI on the self-hosted instance, configured by its owner. LiftMate itself gains no cloud dependency and no bundled API keys. |
 | P2 | **A suggestion you can't audit is one you stop trusting.** (verbatim from `progression.js`) | Every Coach proposal is a list of discrete changes, each with a rationale tied to the user's own data. Every applied change is logged and reversible. |
 | P3 | **Opt-in, twice.** | The instance owner must enable AI; each profile must additionally consent after seeing exactly what data leaves the server. Default is off at both levels. |
 | P4 | **The engine keeps the math.** | Session-to-session weight/rep targets stay with the deterministic progression engine (`linear`, `greyskull`, `double`, `time`). The Coach configures the plan and the policies, not tomorrow's bar weight. |
@@ -139,7 +139,7 @@ Agreed with the project owner on 2026-07-31 (options were presented and selected
 
 ### In scope
 
-- **Self-hosted instances only** — the CLI agent runs on the machine (or container host) that runs openGym; the instance owner installs and authenticates the CLI of their choice.
+- **Self-hosted instances only** — the CLI agent runs on the machine (or container host) that runs LiftMate; the instance owner installs and authenticates the CLI of their choice.
 - **Signed-in profiles only (v1).** Coach jobs run server-side against the profile's synced state; consent, history and proposals are tied to a profile.
 - Both Coach capabilities: **plan creation** and **feedback-driven recalculation**, including the refinement loop, per-change approval, revert, coach log, notifications, per-profile settings, and admin configuration/status.
 - **Provider adapters** for Claude Code CLI, Gemini CLI, OpenAI Codex CLI (the "GPT CLI"), plus a custom-command escape hatch.
@@ -158,10 +158,10 @@ Agreed with the project owner on 2026-07-31 (options were presented and selected
 
 Updated for this feature; all current personas remain valid.
 
-- **The instance owner** — installs *and pays for* the CLI agent (their subscription/API account), decides whether the instance offers the Coach at all, caps usage, monitors health. Trusts openGym not to surprise their users.
+- **The instance owner** — installs *and pays for* the CLI agent (their subscription/API account), decides whether the instance offers the Coach at all, caps usage, monitors health. Trusts LiftMate not to surprise their users.
 - **The self-coached lifter** — trains consistently, logs honestly, has goals but not programming expertise. Wants "someone" to look at the numbers and adjust the plan — without handing their training history to a SaaS.
-- **The beginner** — installed openGym (or was invited to a family instance), owns two dumbbells and a bench, doesn't know where to start. The starter PPL is close but not right.
-- **The skeptic / non-AI user** — chose openGym *because* it has no cloud AI nonsense. Must lose nothing: with AI unconfigured or consent declined, the app is pixel-identical to today.
+- **The beginner** — installed LiftMate (or was invited to a family instance), owns two dumbbells and a bench, doesn't know where to start. The starter PPL is close but not right.
+- **The skeptic / non-AI user** — chose LiftMate *because* it has no cloud AI nonsense. Must lose nothing: with AI unconfigured or consent declined, the app is pixel-identical to today.
 
 ---
 
@@ -191,7 +191,7 @@ Story IDs are stable for the technical plan to reference. Priorities: **[M]**ust
 *As an instance owner, I can enable the Coach by configuring which locally-installed CLI agent to use, so my users get AI features without any of them needing accounts or API keys.*
 - Configuration lives at instance level (`.env`, consistent with `ADMIN_UIDS` / `INVITE_ONLY`), selecting one of: `claude` (Claude Code CLI), `gemini` (Gemini CLI), `codex` (OpenAI Codex CLI), or a custom command implementing the same contract.
 - Default is **unset/off**: no AI UI appears anywhere, no new behaviour.
-- The CLI's own authentication is the owner's responsibility (their subscription or API account); openGym never asks users for keys.
+- The CLI's own authentication is the owner's responsibility (their subscription or API account); LiftMate never asks users for keys.
 
 **A2 [M] See status & test.**
 *As an admin, I can see in the admin dashboard whether the Coach is configured, reachable and authenticated, and run a test invocation.*
@@ -365,7 +365,7 @@ Numbered for the technical plan to trace. **[M]/[S]/[C]** as before.
 - **FR-01 [M]** The instance selects at most one active provider: `claude` | `gemini` | `codex` | `custom`, via instance configuration; absence = feature fully off (Epic F).
 - **FR-02 [M]** Provider adapters invoke the CLI **non-interactively** ("headless": prompt in, machine-readable result out) and must not require a TTY.
 - **FR-03 [M]** The `custom` provider is any owner-supplied command honouring the same contract (documented), enabling local models or future CLIs without code changes.
-- **FR-04 [M]** openGym never stores or asks for model API keys/accounts in its UI; CLI authentication is owned by the instance owner outside openGym.
+- **FR-04 [M]** LiftMate never stores or asks for model API keys/accounts in its UI; CLI authentication is owned by the instance owner outside LiftMate.
 - **FR-05 [M]** Admin dashboard exposes: configured provider, CLI availability, auth status (as reported by a test call), last job time/outcome, last error; plus a manual test action (A2).
 - **FR-06 [S]** Per-profile daily job cap, owner-configurable, default 10; exceeded requests fail with a clear message (A3).
 - **FR-07 [M]** At most one Coach job runs per profile at a time; a second request while one runs is rejected with "already thinking".
@@ -377,7 +377,7 @@ Numbered for the technical plan to trace. **[M]/[S]/[C]** as before.
 - **FR-10 [M]** Job payloads are **minimised** to: unit, language, effort scale; Coach intake profile; routines + week (+ per-exercise config incl. progression settings); the review window of workouts (dates, exercise ids/names, per-set values incl. done flags and effort, targets, PR flags, durations); body-weight series in the window + goal; derived aggregates (stalls, adherence counts, muscle-balance summary, e1RM trend); custom-exercise names/body parts/descriptions in use.
 - **FR-11 [M]** Job payloads **exclude**: profile display name and user id (an opaque handle is used), passkey/credential data, invite data, push subscriptions, theme/appearance settings, any other profile's data.
 - **FR-12 [M]** Admins cannot view intake answers, payloads, proposals or Coach notes of other users (A4); admin visibility is limited to job counts, timestamps and error states.
-- **FR-13 [M]** All free text the user provides (intake, refinement, review notes) is treated as data for the Coach, never as instructions to openGym itself; it cannot alter provider selection, caps, or another profile's anything.
+- **FR-13 [M]** All free text the user provides (intake, refinement, review notes) is treated as data for the Coach, never as instructions to LiftMate itself; it cannot alter provider selection, caps, or another profile's anything.
 
 ### 10.3 Plan creation
 

@@ -1,6 +1,6 @@
 # AI Coach — implementation report
 
-**Branch:** `ai-enablement` on `alexpcosta/openGym` · **Commit:** `10a24f0`
+**Branch:** `ai-enablement` on `alexpcosta/LiftMate` · **Commit:** `10a24f0`
 **Companion documents:** [`functional-plan.md`](./functional-plan.md) · [`implementation-plan.md`](./implementation-plan.md)
 **Status:** Phases 1–3 implemented, tested and pushed. Two items need a human before release (§5).
 
@@ -91,7 +91,7 @@ provider-agnostic from day one, as ID3 intended.
 ### 2.6 Sixteen pre-existing untranslated strings were picked up
 
 Extracting new keys surfaced ten demo/mobile-only strings (`Demo`, `Reset demo data`,
-`Self-host openGym`…) that were already missing from every locale pack before this work. They
+`Self-host LiftMate`…) that were already missing from every locale pack before this work. They
 are in the same files, so they were translated too. The locale packs went 613 → 781 keys.
 
 ---

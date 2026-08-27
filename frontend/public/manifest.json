@@ -1,6 +1,6 @@
 {
-  "name": "openGym",
-  "short_name": "openGym",
+  "name": "LiftMate AI",
+  "short_name": "LiftMate",
   "description": "Personal gym & body weight tracker",
   "start_url": "./",
   "scope": "./",

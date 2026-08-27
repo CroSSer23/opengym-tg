@@ -1,9 +1,9 @@
-# openGym × CLI AI — implementation plan
+# LiftMate × CLI AI — implementation plan
 
 **Feature:** AI Coach — plan creation & feedback-driven recalculation via a locally-run CLI agent
 **Companion document:** [`functional-plan.md`](./functional-plan.md) — all FR/NFR/story IDs referenced below are defined there
 **Status:** Draft for review
-**Baseline:** `main` @ `1f40230` (v1.2.3 + dependabot config), fork `alexpcosta/openGym`
+**Baseline:** `main` @ `1f40230` (v1.2.3 + dependabot config), fork `alexpcosta/LiftMate`
 **Target release:** v1.3.0
 
 ---
@@ -36,7 +36,7 @@ Agreed with the project owner before this plan was written. These bind everythin
 | # | Decision | Consequence |
 |---|----------|-------------|
 | ID1 | **CLI ships in the build.** The provider CLI is installed into the existing `api` Docker image; owners never install anything. | `api/Dockerfile` grows a pinned CLI install; compose files unchanged; "install the CLI" disappears from the docs. |
-| ID2 | **Authentication is a UI flow.** The admin connects the instance to the provider from the admin dashboard via the provider's own OAuth flow — no terminal, no `.env`, no file edits. | openGym implements the OAuth (PKCE) dance the CLI itself uses, stores tokens server-side, and injects them into CLI invocations. An API-key field remains as fallback. |
+| ID2 | **Authentication is a UI flow.** The admin connects the instance to the provider from the admin dashboard via the provider's own OAuth flow — no terminal, no `.env`, no file edits. | LiftMate implements the OAuth (PKCE) dance the CLI itself uses, stores tokens server-side, and injects them into CLI invocations. An API-key field remains as fallback. |
 | ID3 | **MVP is Claude Code only.** One adapter done end-to-end, plus a fixture CLI for tests. The adapter interface is provider-agnostic from day one. | Gemini CLI / Codex CLI / custom command land in Phase 2 as thin adapters behind the same contract. |
 | ID4 | **All configuration lives in the admin UI.** Provider enablement, credentials, caps — persisted server-side in the data dir. | No `.env` keys required. One optional env kill-switch (`COACH_DISABLED=1`) for fleet operators; absence of stored config = feature off. |
 
@@ -49,7 +49,7 @@ The functional plan was written before ID1–ID4; four of its statements change.
 | # | Functional-plan text | Amended to |
 |---|---------------------|------------|
 | A1 | FR-01 / A1 / J1: provider selected "via instance configuration (`.env`, consistent with `ADMIN_UIDS`)". | Provider is enabled and configured in the **admin dashboard**; stored in `data/coach.json`. Default remains **off** (no stored config → Epic F parity). `COACH_DISABLED=1` force-disables regardless of stored config. J1 becomes: open admin dashboard → enable Coach → Connect → authorize → green. Zero terminal steps. |
-| A2 | FR-04: "openGym never stores or asks for model API keys/accounts in its UI; CLI authentication is owned by the instance owner outside openGym." | The **admin** dashboard is now where the instance credential is created (OAuth) or pasted (API key fallback); it is stored server-side, encrypted, never shown back in full. What FR-04 protected is preserved: **profile users** never see, provide, or hold credentials, and the consent screen still names the provider and whose account pays (FR-09). |
+| A2 | FR-04: "LiftMate never stores or asks for model API keys/accounts in its UI; CLI authentication is owned by the instance owner outside LiftMate." | The **admin** dashboard is now where the instance credential is created (OAuth) or pasted (API key fallback); it is stored server-side, encrypted, never shown back in full. What FR-04 protected is preserved: **profile users** never see, provide, or hold credentials, and the consent screen still names the provider and whose account pays (FR-09). |
 | A3 | FR-50: *all* new per-profile data, including the pending proposal, lives in the synced state blob. | The **pending proposal and job status are server-owned** (`data/coach/<uid>.json`), not part of the state blob. Reason: the blob is written whole by clients with last-write-wins on `_ts` (`PUT /api/data`); a server-side scheduled job writing a proposal into it would be silently erased by any device pushing an older copy. Consent, Coach profile, cadence, log and snapshots stay in `S.coach` (synced, exported, reset) as written. Proposals are transient working data; their outcomes are captured in the log. Profile deletion and "Reset everything" also clear the server-side file (FR-51 holds). |
 | A4 | §12 Docs row / SELF_HOSTING: "CLI install/auth per provider". | Docs describe **no installation** (ID1) and the in-UI connect flow (ID2). `.env.example` gains only a commented `COACH_DISABLED` block. |
 
@@ -188,7 +188,7 @@ Covers: A1/A4 amendments, FR-01, FR-05, FR-06, FR-42, ID4.
 
 Covers: ID2, amendment A2, journey J1. This is the piece the directives make novel, so it is specified defensively.
 
-**C-1. Mechanism.** The Claude Code CLI supports non-interactive auth via an environment variable carrying a long-lived OAuth token (the same token its own `claude setup-token` flow produces). openGym reproduces that flow server-side — **standard OAuth 2.0 authorization-code + PKCE**, using the CLI's public client parameters (extracted from, and CI-verified against, the *pinned* CLI version — see C-4):
+**C-1. Mechanism.** The Claude Code CLI supports non-interactive auth via an environment variable carrying a long-lived OAuth token (the same token its own `claude setup-token` flow produces). LiftMate reproduces that flow server-side — **standard OAuth 2.0 authorization-code + PKCE**, using the CLI's public client parameters (extracted from, and CI-verified against, the *pinned* CLI version — see C-4):
 
 1. Admin clicks **Connect** → `POST /api/admin/coach/auth/start`. Server generates `code_verifier`/`code_challenge` + `state`, holds them in the existing in-memory challenge store pattern (5-min TTL), returns the provider **authorize URL**.
 2. Admin UI opens the URL in a new tab. The admin signs in to their Anthropic account (Console/API **or** Claude subscription — both work, which is exactly why OAuth was chosen over API-key-only) and approves.
@@ -201,7 +201,7 @@ The admin experience is: *click → sign in → approve → paste one code → g
 
 **C-3. API-key fallback (kept).** A second field on the same admin card accepts a Console API key. Same storage, different env var. This is the escape hatch if the OAuth surface moves (R2) and the natural path for owners who prefer API billing.
 
-**C-4. Containing the "unofficial surface" risk.** The OAuth client id/endpoints are the CLI's, not a published openGym-facing API. Three mitigations, in order: (1) the CLI version is pinned and the OAuth parameters live in one constants block in `oauth.js` with a comment naming the CLI version they were verified against — bumping the CLI pin and re-verifying is one PR; (2) a failed `finish` or probe falls back cleanly to the API-key path with an explicit admin-facing message; (3) if the parameters ever become undiscoverable, the contingency (not built now) is driving `claude setup-token` under a PTY. Risk R2 tracks this.
+**C-4. Containing the "unofficial surface" risk.** The OAuth client id/endpoints are the CLI's, not a published LiftMate-facing API. Three mitigations, in order: (1) the CLI version is pinned and the OAuth parameters live in one constants block in `oauth.js` with a comment naming the CLI version they were verified against — bumping the CLI pin and re-verifying is one PR; (2) a failed `finish` or probe falls back cleanly to the API-key path with an explicit admin-facing message; (3) if the parameters ever become undiscoverable, the contingency (not built now) is driving `claude setup-token` under a PTY. Risk R2 tracks this.
 
 ---
 
@@ -346,7 +346,7 @@ The enforcement points, one line each — each is also a test (§13):
 7. Admin endpoints expose counts and error classes only — never intake, payloads, proposals (FR-12 / A4).
 8. User free text reaches the model as JSON data; nothing outside schema + closed type list can take effect (E-5/E-4, FR-13).
 9. Change-set application refuses everything outside `routines`/`week` (E-4 server + §9 client, C4).
-10. Licensing posture (NFR-5): the CLI is installed alongside, invoked as a separate process — mere aggregation, AGPL posture unchanged; `NOTICE.md` gains a line; the connect dialog links the provider's terms (the owner accepts them, not openGym).
+10. Licensing posture (NFR-5): the CLI is installed alongside, invoked as a separate process — mere aggregation, AGPL posture unchanged; `NOTICE.md` gains a line; the connect dialog links the provider's terms (the owner accepts them, not LiftMate).
 
 ---
 

@@ -1,5 +1,5 @@
 /* The Telegram side of the bot: one Bot API client, one long-polling loop, and the two
- * outbound things openGym ever does -- greet someone who opened the chat, and tell someone
+ * outbound things LiftMate ever does -- greet someone who opened the chat, and tell someone
  * their rest is over.
  *
  * Long polling rather than a webhook, deliberately. A webhook needs a publicly resolvable
@@ -82,7 +82,7 @@ function launchKeyboard(text, deepLink) {
   return { inline_keyboard: [[{ text, web_app: { url } }]] };
 }
 
-export function sendMessage(chatId, html, { deepLink = null, button = 'Open openGym' } = {}) {
+export function sendMessage(chatId, html, { deepLink = null, button = 'Open LiftMate' } = {}) {
   return call('sendMessage', {
     chat_id: chatId,
     text: html,
@@ -107,7 +107,7 @@ export function notify(chatId, { title, body, url }) {
 /* ---------- commands ---------- */
 
 const WELCOME = [
-  '<b>openGym</b>',
+  '<b>LiftMate</b>',
   '',
   'Your plan, your workouts and your weight — on your own server.',
   'Tap the button below to open it. The first time, it signs you in from this Telegram account;',
@@ -126,12 +126,12 @@ const HELP = [
   '',
   'Turn those off any time in <b>Settings → Notifications</b> inside the app.',
   '',
-  '/app — open openGym',
+  '/app — open LiftMate',
   '/help — this message'
 ].join('\n');
 
 const NO_HTTPS = [
-  '<b>openGym</b>',
+  '<b>LiftMate</b>',
   '',
   'This instance is served over plain HTTP, and Telegram will only open a Mini App over HTTPS.',
   'Put it behind an HTTPS domain and set <code>TELEGRAM_WEBAPP_URL</code>, then send /start again.'
@@ -165,13 +165,13 @@ async function configure() {
   me = { id: who.result.id, username: who.result.username };
   await call('setMyCommands', {
     commands: [
-      { command: 'app', description: 'Open openGym' },
+      { command: 'app', description: 'Open LiftMate' },
       { command: 'help', description: 'What this bot does' }
     ]
   });
   // The persistent menu button is the nicest way in, but it is a web_app button like any other.
   if (LAUNCHABLE) {
-    await call('setChatMenuButton', { menu_button: { type: 'web_app', text: 'openGym', web_app: { url: WEBAPP_URL } } });
+    await call('setChatMenuButton', { menu_button: { type: 'web_app', text: 'LiftMate', web_app: { url: WEBAPP_URL } } });
   } else {
     console.warn('telegram: TELEGRAM_WEBAPP_URL is not https (' + WEBAPP_URL + ') — the Mini App cannot be opened from Telegram');
   }

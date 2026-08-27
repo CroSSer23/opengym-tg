@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Regenerates the per-language exercise instruction packs in frontend/src/instr/.
 //
-// Two sources, because the upstream dataset does not cover every language openGym's UI does.
+// Two sources, because the upstream dataset does not cover every language LiftMate's UI does.
 //
 //   UPSTREAM  es fr it tr ru zh hi pl ko - read straight out of instruction_steps[lang].
 //   LOCAL     uk de pt                   - translated in this repo, one JSON map per language

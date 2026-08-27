@@ -8,7 +8,7 @@ contact_links:
     about: Not sure it belongs in the app yet? Float it in Ideas first — issues are for agreed work.
   - name: Show your setup
     url: https://github.com/DuarteSantos8/openGym/discussions/categories/show-and-tell
-    about: Running openGym somewhere interesting, or built something on top of it? Show it off.
+    about: Running LiftMate somewhere interesting, or built something on top of it? Show it off.
   - name: Contributing guide
     url: https://github.com/DuarteSantos8/openGym/blob/main/CONTRIBUTING.md
     about: Project layout, dev setup and guidelines before you open a PR.

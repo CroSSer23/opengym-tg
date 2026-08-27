@@ -1,6 +1,6 @@
 # Security policy
 
-openGym is a self-hosted app: you run the server, you hold the data. This file says which
+LiftMate is a self-hosted app: you run the server, you hold the data. This file says which
 versions get fixes, how to report something privately, and — the part most people actually
 need — what the app protects you from and what it doesn't.
 
@@ -73,7 +73,7 @@ in the thread; there's no objection, and no request to sit on it indefinitely.
 
 ## Security model
 
-Read this before hosting openGym for anyone other than yourself.
+Read this before hosting LiftMate for anyone other than yourself.
 
 ### What it does
 
@@ -103,7 +103,7 @@ Read this before hosting openGym for anyone other than yourself.
   subscriptions, invite codes), one `state-<uid>.json` per user with their complete workout
   history and body-weight log, `secret`, and `vapid.json`. Anyone who can read that folder — you,
   whoever holds the backups, whoever gets into the host — can read every user's data, and with
-  `secret` can mint a valid session cookie for any account. **If you host openGym for other
+  `secret` can mint a valid session cookie for any account. **If you host LiftMate for other
   people, they are trusting you exactly as much as they'd trust any server operator.**
 - **Admins can read everything.** A user listed in `ADMIN_UIDS` (or flagged `admin: true` in
   `db.json`) gets every user's full history and body weight, can disable accounts, and can create

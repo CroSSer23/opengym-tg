@@ -1,6 +1,6 @@
-# Contributing to openGym
+# Contributing to LiftMate
 
-Thanks for taking a look! openGym is intentionally small and dependency-light, and the goal is
+Thanks for taking a look! LiftMate is intentionally small and dependency-light, and the goal is
 to keep it that way — easy to read, easy to self-host.
 
 ## Project layout

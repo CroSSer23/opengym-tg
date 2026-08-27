@@ -36,7 +36,7 @@ provider dies, the engine carries on offline without skipping a beat.
 
 ## Principles
 
-- **Your box, your data.** The provider runs locally; openGym ships no bundled API keys.
+- **Your box, your data.** The provider runs locally; LiftMate ships no bundled API keys.
 - **Opt in twice.** An admin enables the feature; each profile consents separately before any of
   its data is used.
 - **Approval required.** Proposals are inert until you tap Apply, one change at a time.
@@ -58,7 +58,7 @@ provider dies, the engine carries on offline without skipping a beat.
 | **Fixture** | in-repo fake | nothing — no AI account at all | walks the whole loop for demos and CI |
 
 Both runtimes are built into the `api` image, so a self-hoster installs nothing. Neither path
-needs an API key. openGym never handles a browser OAuth callback and never asks your users for
+needs an API key. LiftMate never handles a browser OAuth callback and never asks your users for
 credentials.
 
 > **Note.** The design deck describes a provider-agnostic surface including Gemini and an
@@ -69,7 +69,7 @@ credentials.
 
 ### Bringing your own endpoint
 
-The other two providers wrap a CLI: openGym starts a process, and the process talks to a vendor.
+The other two providers wrap a CLI: LiftMate starts a process, and the process talks to a vendor.
 The endpoint provider skips the middle step and posts to `/chat/completions` itself, which makes
 it the way to run the Coach on anything that speaks that dialect — OpenAI, OpenRouter, a LiteLLM
 or vLLM gateway, or an Ollama on your own LAN.

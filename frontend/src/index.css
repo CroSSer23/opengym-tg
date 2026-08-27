@@ -1,5 +1,5 @@
 /* ============================================================================
-   openGym - design system: "The Log"
+   LiftMate - design system: "The Log"
    ----------------------------------------------------------------------------
    What this replaces was, deliberately and well, an iOS system app: Apple's
    palette, Apple's grouped inset lists, Apple's controls, Apple's type stack.
@@ -7,7 +7,7 @@
    platform default rather than as itself.
 
    The subject here is not fitness. It is a RECORD. The whole argument for
-   openGym is "your data, your server", so the language is a measuring
+   LiftMate is "your data, your server", so the language is a measuring
    instrument and a training ledger, not a lifestyle app.
 
    Four rules carry it:
@@ -29,7 +29,7 @@
    ========================================================================== */
 
 /* ----------------------------------------------------------------- fonts -- */
-/* Self-hosted rather than linked from a CDN: openGym is an offline-capable PWA
+/* Self-hosted rather than linked from a CDN: LiftMate is an offline-capable PWA
    that promises no cloud dependencies, and a blocking third-party font request
    on every load would break both claims. Variable weight axes only, subsetted
    by Google's own unicode-ranges, so a Latin-only reader never downloads the

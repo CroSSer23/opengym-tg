@@ -11,7 +11,7 @@ import { unprivilegedIds } from './spawn.js';
 const SDK_VERSION = 'Claude Agent SDK 0.3.220';
 const OUTPUT_CAP = 4 * 1024 * 1024;
 const SYSTEM_PROMPT = [
-  'You are the openGym Coach.',
+  'You are the LiftMate Coach.',
   'Answer only the supplied task and return exactly the requested JSON.',
   'You have no tools, filesystem access, external services, or persistent memory.'
 ].join(' ');

@@ -3,7 +3,7 @@
  * This is a deliberate reimplementation of the parts of telegram-web-app.js this app uses,
  * rather than a script tag pointing at telegram.org. Three reasons, in order of weight:
  *
- *   1. openGym is offline-capable and advertises no cloud dependencies. A blocking third-party
+ *   1. LiftMate is offline-capable and advertises no cloud dependencies. A blocking third-party
  *      script in <head> would be a request every user makes on every load, including the ones
  *      who have never heard of Telegram, and a single point of failure for the whole app when
  *      the CDN is unreachable.
