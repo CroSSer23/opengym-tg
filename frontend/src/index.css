@@ -241,6 +241,11 @@ button,.chip,.tile,.item,.wday,.cal-d,.swatch,.hm-c,.lrow,.seg button,.stp butto
    Title Case. The compound selectors are needed: .tag/.chip come later in this file
    and would otherwise win on source order. */
 .nocap,.tag.nocap,.chip.nocap{text-transform:none}
+/* An exercise name is title-cased only while it is the dataset's English. Where a language
+   has a name pack the names arrive written the way that language writes them, and
+   capitalising every word turns "жим штанги лежачи" into "Жим Штанги Лежачи". */
+.exname{text-transform:capitalize}
+html[data-exnames] .exname{text-transform:none}
 
 /* ------------------------------------------------------------ the target -- */
 /* The one device this design is built around.

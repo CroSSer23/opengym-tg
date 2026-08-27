@@ -4,7 +4,7 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
-import { setLang, useLang } from './lib/i18n.js'
+import { setLang, useLang, namesLocalised } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
 import * as tg from './lib/telegram.js'
 import { useWakeLock } from './lib/wakelock.js'
@@ -65,6 +65,10 @@ function Shell() {
   useEffect(() => tg.onThemeChanged(() => applyPrefs(effectiveTheme(useStore.getState().S), useStore.getState().S.accent)), [])
   useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
   useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
+  // Tells the stylesheet whether exercise names still need title-casing (see .exname).
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-exnames', namesLocalised())
+  }, [langV, S.lang])
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on

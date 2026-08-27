@@ -93,7 +93,7 @@ function CreatedPlan({ p, S, update, toast, nav, refresh }) {
       {!!r.why && <div className="dim small" style={{ marginBottom: 10, lineHeight: 1.5 }}>{r.why}</div>}
       {r.ex.map((e, i) => <div key={i} style={{ padding: '8px 0', borderTop: i ? '1px solid var(--sep)' : 'none' }}>
         <div className="row between">
-          <span className="small capitalize" style={{ fontWeight: 500 }}>{exName(e.id)}</span>
+          <span className="small exname" style={{ fontWeight: 500 }}>{exName(e.id)}</span>
           <span className="small muted" style={{ whiteSpace: 'nowrap' }}>{exLine(e, S.unit)}</span>
         </div>
         {!!e.why && <div className="dim" style={{ fontSize: '.72rem', marginTop: 3, lineHeight: 1.4 }}>{e.why}</div>}
