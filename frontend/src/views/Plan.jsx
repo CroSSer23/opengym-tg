@@ -6,7 +6,7 @@ import { dayAssignSheet, loadStarterPlan, planToolsSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
-import { coachAvailable } from '../lib/coach.js'
+import { coachAvailable, hasConsent } from '../lib/coach.js'
 import { DEMO } from '../lib/demo.js'
 import { MOBILE } from '../lib/mobile.js'
 
@@ -27,7 +27,6 @@ export default function Plan() {
   return <>
     <div className="hdr">
       <div><h1>{t('Plan')}</h1><div className="sub">{t('Your weekly routine')}</div></div>
-      {coachOn && <button className="iconbtn" onClick={() => nav('/coach')} aria-label={t('Coach')} title={t('Coach')}><Icon name="sparkles" /></button>}
       <button className="iconbtn" onClick={planToolsSheet} aria-label={t('Share your plan')} title={t('Share your plan')}><Icon name="upload" /></button>
     </div>
     <div className="cols"><div>
@@ -44,14 +43,21 @@ export default function Plan() {
     </div><div>
       <div className="row between" style={{ marginTop: 22, marginBottom: 10 }}>
         <h4 className="sec" style={{ margin: 0 }}>{t('Routines')}</h4>
-        <Button size="sm" variant="tinted" icon="plus" onClick={addRoutine}>{t('New')}</Button>
+        <div className="row" style={{ gap: 8 }}>
+          {coachOn && <Button size="sm" variant="tinted" icon="sparkles" onClick={() => nav(hasConsent(S) ? '/coach/intake' : '/coach')}>{t('Coach')}</Button>}
+          <Button size="sm" variant="tinted" icon="plus" onClick={addRoutine}>{t('New')}</Button>
+        </div>
       </div>
       {S.routines.length ? <div className="list">{S.routines.map(r => <div key={r.id} className="item" onClick={() => nav('/plan/r/' + r.id)}>
         <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
         <Icon name="chevronRight" className="chev" /></div>)}</div> : <>
         <div className="empty"><div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Create one or load the starter plan.')}</div>
-        <Button icon="sparkles" onClick={loadStarterPlan}>{t('Load starter plan (Push / Pull / Legs)')}</Button>
+        {coachOn && <>
+          <Button variant="primary" icon="sparkles" onClick={() => nav(hasConsent(S) ? '/coach/intake' : '/coach')}>{t('Let the Coach build my plan')}</Button>
+          <div style={{ height: 8 }} />
+        </>}
+        <Button variant={coachOn ? 'plain' : undefined} icon="sparkles" onClick={loadStarterPlan}>{t('Load starter plan (Push / Pull / Legs)')}</Button>
       </>}
     </div></div>
   </>
