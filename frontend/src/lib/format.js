@@ -16,9 +16,14 @@ export function fmtDate(iso, long) {
   const d = new Date(iso + 'T12:00:00')
   return d.toLocaleDateString(dateLocale(), long ? { weekday: 'short', day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' })
 }
+// Duration abbreviations follow the UI language like the dates and numbers above. A hardcoded
+// 'min' was the last English word left in a Ukrainian workout list, and Intl already knows the
+// abbreviation for every locale shipped here, so there is nothing for a translator to keep.
+const durUnit = (n, unit) =>
+  new Intl.NumberFormat(dateLocale(), { style: 'unit', unit, unitDisplay: 'short' }).format(n)
 export function fmtDur(ms) {
   const m = Math.floor(ms / 60000)
-  return m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + ' min'
+  return m >= 60 ? durUnit(Math.floor(m / 60), 'hour') + ' ' + durUnit(m % 60, 'minute') : durUnit(m, 'minute')
 }
 // Imported history has no clock — an unknown duration is left out rather than shown as "0 min".
 export const durPart = ms => (ms >= 60000 ? [fmtDur(ms)] : [])
