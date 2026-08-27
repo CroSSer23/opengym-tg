@@ -53,8 +53,15 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      # No dependencies to install: the Coach tests run on node:test and drive the in-repo
-      # fixture provider, so the whole job graph works without an AI account or a network.
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      # This job used to install nothing, on the reasoning that the Coach tests run on
+      # node:test and drive the in-repo fixture provider. That stopped being true when the
+      # Claude adapter started importing @anthropic-ai/claude-agent-sdk at module load:
+      # coach/adapters/index.js pulls it in, so config.test.js and jobs.test.js have been
+      # failing with ERR_MODULE_NOT_FOUND rather than for any reason of their own.
+      - run: npm ci
+        working-directory: api
       - run: npm test
         working-directory: api
       # The API's copy of the exercise catalogue is generated and committed. A dataset change
