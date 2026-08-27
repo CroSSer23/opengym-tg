@@ -6,6 +6,7 @@ import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
 import { setLang, useLang } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
+import * as tg from './lib/telegram.js'
 import { useWakeLock } from './lib/wakelock.js'
 import { startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
@@ -53,6 +54,16 @@ function Shell() {
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
   useWakeLock(!!S.active && S.keepAwake !== false)
 
+  // Telegram's own back arrow, wired to the router. Without this a Mini App is a web page in
+  // a box: the platform's back affordance is right there in the header and does nothing.
+  const atRoot = loc.pathname === '/home' || loc.pathname === '/'
+  useEffect(() => { tg.setBackButton(!atRoot) }, [atRoot])
+  useEffect(() => tg.onBackButton(() => {
+    // A Mini App is often opened straight onto a deep link, so there may be nothing behind
+    // this screen to go back to.
+    if (window.history.length > 1) navigate(-1); else navigate('/home')
+  }), [navigate])
+
   const authed = user || isGuest
   if (!ready && !authed) return (
     <div id="app">
@@ -98,8 +109,26 @@ function Shell() {
   )
 }
 
+/**
+ * A notification's deep link, applied once the app is signed in and routable. It arrives as
+ * `?to=coach` rather than in the fragment because Telegram owns the fragment on launch.
+ */
+function DeepLink() {
+  const navigate = useNavigate()
+  const authed = useStore(s => !!s.user || s.isGuest())
+  const ready = useStore(s => s.ready)
+  useEffect(() => {
+    if (!ready || !authed || !tg.deepLink) return
+    navigate(tg.deepLink, { replace: true })
+  }, [ready, authed, navigate])
+  return null
+}
+
 export default function App() {
   const boot = useStore(s => s.boot)
   useEffect(() => { boot() }, [boot])
-  return <HashRouter><Shell /></HashRouter>
+  // Told once, after the first paint: Telegram shows its own placeholder until a Mini App
+  // says it is ready, and expands the sheet to full height only when asked.
+  useEffect(() => { tg.ready() }, [])
+  return <HashRouter><DeepLink /><Shell /></HashRouter>
 }

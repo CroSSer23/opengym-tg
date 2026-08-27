@@ -4,8 +4,9 @@ import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { ACCENTS, todayISO, localTZ } from '../lib/format.js'
 import { effortOf } from '../lib/history.js'
-import { webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
+import { api, webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
+import { IN_TELEGRAM, initData as tgInitData, haptic } from '../lib/telegram.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
 import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
 import { DEMO, REPO } from '../lib/demo.js'
@@ -153,6 +154,7 @@ export default function Settings() {
       </Section>
     )}
 
+    {user && !MOBILE && <TelegramCard S={S} update={update} toast={toast} />}
     {(user || MOBILE) && <NotificationsCard S={S} update={update} toast={toast} />}
 
     {/* ---------- appearance ---------- */}
@@ -257,6 +259,69 @@ function NotificationsCard({ S, update, toast }) {
   return <PushCard S={S} update={update} toast={toast} />
 }
 
+/* ------------------------------- Telegram -------------------------------
+   Linking is only possible from inside the Mini App, because the proof that this browser
+   belongs to a Telegram account *is* the signed launch Telegram put in the URL. From a normal
+   browser there is nothing to prove it with, so the card says where to go instead of offering
+   a button that cannot work. */
+function TelegramCard({ S, update, toast }) {
+  const config = useStore(s => s.config)
+  const [info, setInfo] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const tgConfig = config?.telegram
+
+  const load = () => api('/api/telegram/me').then(setInfo).catch(() => {})
+  useEffect(() => { if (tgConfig) load() }, [!!tgConfig])
+
+  if (!tgConfig) return null            // no bot on this instance ⇒ no Telegram anywhere
+
+  const link = async () => {
+    setBusy(true)
+    try {
+      const r = await api('/api/telegram/link', { method: 'POST', body: JSON.stringify({ initData: tgInitData }) })
+      haptic('success')
+      toast(t('Linked to Telegram{0}', r.telegram?.username ? ' @' + r.telegram.username : ''))
+      await load()
+    } catch (e) { toast(e.message) }
+    setBusy(false)
+  }
+
+  const unlink = async () => {
+    // Someone who signed up through Telegram and has never made a passkey has no other way
+    // back in. That is their call to make, but not one to make by accident.
+    const warn = info && !info.hasPasskey
+    if (warn && !window.confirm(t('This profile has no passkey, so Telegram is the only way back into it. Unlink anyway?'))) return
+    setBusy(true)
+    try { await api('/api/telegram/unlink', { method: 'POST', body: '{}' }); toast(t('Telegram unlinked')); await load() }
+    catch (e) { toast(e.message) }
+    setBusy(false)
+  }
+
+  const handle = tgConfig.bot ? '@' + tgConfig.bot : t('the bot')
+
+  return <Section
+    title={t('Telegram')}
+    footer={info?.linked
+      ? t('Rest timers, workout reminders and Coach proposals arrive as messages from {0}.', handle)
+      : t('Open {0} in Telegram and tap the button to launch openGym — you can link it from there.', handle)}>
+    {info?.linked ? <>
+      <Row icon="check" iconTint="var(--acc)"
+        title={t('Linked')}
+        subtitle={info.username ? '@' + info.username : t('this Telegram account')} />
+      <Row icon="bell" iconTint="var(--blue)" title={t('Notify me on Telegram')}>
+        <Switch checked={S.tgNotify !== false} onChange={v => update(s => { s.tgNotify = v })} />
+      </Row>
+      <Row icon="xmark" iconTint="var(--red)" title={t('Unlink Telegram')} danger onClick={busy ? undefined : unlink} />
+    </> : IN_TELEGRAM ? (
+      <Row icon="link" iconTint="var(--blue)" title={t('Link this Telegram account')}
+        subtitle={t('Then the bot can reach you between sessions.')} accessory="chevron" onClick={busy ? undefined : link} />
+    ) : (
+      <Row icon="link" iconTint="var(--grey)" title={t('Not linked')}
+        subtitle={t('Link it from inside the Telegram app.')} />
+    )}
+  </Section>
+}
+
 // Mobile build: the reminder is a native local notification scheduled on planned weekdays —
 // no push server involved. The schedule itself is (re)synced by the store on every persist;
 // this card only owns the OS permission prompt when the switch turns on.
@@ -289,12 +354,22 @@ function MobileReminderCard({ S, update, toast }) {
 function PushCard({ S, update, toast }) {
   const [on, setOn] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [tgLinked, setTgLinked] = useState(false)
   const supported = pushSupported()
+  const hasTelegram = !!useStore(s => s.config?.telegram)
+  // A reminder needs a way to reach you, not specifically a web-push subscription. Someone
+  // living in the Mini App will never grant a push permission from inside a Telegram WebView,
+  // and their reminders arrive as messages instead.
+  const deliverable = on || tgLinked
 
   useEffect(() => {
     if (!supported) return
     navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription()).then(sub => setOn(!!sub)).catch(() => {})
   }, [supported])
+  useEffect(() => {
+    if (!hasTelegram) return
+    api('/api/telegram/me').then(r => setTgLinked(!!r.linked)).catch(() => {})
+  }, [hasTelegram])
 
   const toggle = async v => {
     setBusy(true)
@@ -309,7 +384,8 @@ function PushCard({ S, update, toast }) {
     catch (e) { toast(e.message || t('Test failed')) }
   }
 
-  if (!supported) return (
+  // No push and no bot: there is genuinely nothing to configure.
+  if (!supported && !tgLinked) return (
     <Section title={t('Notifications')}>
       <Row icon="bellSlash" iconTint="var(--grey)" title={t('Not supported in this browser.')} />
     </Section>
@@ -318,20 +394,20 @@ function PushCard({ S, update, toast }) {
   return <>
     <Section
       title={t('Notifications')}
-      footer={on && S.reminder?.on
+      footer={deliverable && S.reminder?.on
         ? t("Only sent on days you have a routine planned and haven't logged a workout yet.") +
           (S.reminder?.tz ? ' ' + t('Timezone: {0} (auto-detected, updates if you travel).', S.reminder.tz) : '')
         : null}
     >
-      <Row icon="bell" iconTint="var(--red)" title={t('Push notifications')} subtitle={t('Rest-timer alerts, even if openGym is closed.')}>
+      {supported && <Row icon="bell" iconTint="var(--red)" title={t('Push notifications')} subtitle={t('Rest-timer alerts, even if openGym is closed.')}>
         <Switch checked={on} disabled={busy} onChange={toggle} />
-      </Row>
-      {on && (
+      </Row>}
+      {deliverable && (
         <Row icon="calendar" iconTint="var(--orange)" title={t('Workout day reminder')}>
           <Switch checked={!!S.reminder?.on} onChange={() => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), on: !s.reminder?.on, tz: localTZ() } })} />
         </Row>
       )}
-      {on && S.reminder?.on && (
+      {deliverable && S.reminder?.on && (
         <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
           <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
             onChange={e => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), time: e.target.value, tz: localTZ() } })} />

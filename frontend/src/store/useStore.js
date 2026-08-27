@@ -4,6 +4,7 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder } from '../lib/mobile.js'
+import { IN_TELEGRAM, initData as tgInitData } from '../lib/telegram.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
@@ -16,6 +17,10 @@ export const DEF = {
   // server pull, backup import) still falls back to the `showRir` boolean this replaced and
   // keeps the column it had. See effortOf.
   reminder: { on: false, time: '08:00', tz: null }, effort: null,
+  // Notifications through the Telegram bot, for a profile that has linked one. Undefined
+  // rather than true so that a profile which never had a bot to opt out of reads as the
+  // default, and so the switch in Settings can tell "on" from "never asked".
+  tgNotify: undefined,
   // AI Coach (issue: AI enablement). null until the profile opts in — a null namespace is the
   // same app it was before the feature existed, which is what Epic F asks for. Shape and
   // bounds live in lib/coach.js.
@@ -153,6 +158,28 @@ export const useStore = create((set, get) => {
       persist(Object.assign(clone(DEF), buildDemoState()), false)
     },
 
+    /**
+     * Exchange the Telegram launch for a session. Returns the user, or null when there is no
+     * launch to exchange or the server refused it — a refusal here is not fatal, it just means
+     * the normal sign-in screen is what this person sees.
+     */
+    async telegramSignIn(code) {
+      if (!IN_TELEGRAM || !tgInitData) return null
+      try {
+        const { user } = await api('/api/telegram/auth', {
+          method: 'POST',
+          // The code only matters on an invite-only instance, and only on the first launch;
+          // a deep link (t.me/bot?startapp=CODE) carries it in the signed launch instead.
+          body: JSON.stringify({ initData: tgInitData, ...(code ? { code } : {}) })
+        })
+        get().setUser(user)
+        return user
+      } catch (e) {
+        console.warn('telegram sign-in refused:', e.message)
+        return null
+      }
+    },
+
     // Boot: ask the server who we are, then pull.
     async boot() {
       // Mobile build: no backend either — restore from the file mirror (the durable copy;
@@ -193,7 +220,13 @@ export const useStore = create((set, get) => {
           get().update(s => { s.reminder = { ...s.reminder, tz } })
         }
       } catch (e) {
-        if (e.status === 401) get().setUser(null)
+        // Not signed in. Inside Telegram that is not a dead end: the launch itself is a
+        // credential, so the first open of the Mini App is also the sign-up. The cookie it
+        // mints outlives the launch, which is why this is only reached once.
+        if (e.status === 401) {
+          const u = await get().telegramSignIn()
+          if (u) await get().pullState(); else get().setUser(null)
+        }
       }
       set({ ready: true })
     }

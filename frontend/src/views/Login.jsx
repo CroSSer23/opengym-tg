@@ -5,6 +5,7 @@ import { hasData } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { useState, useRef, useEffect } from 'react'
+import { IN_TELEGRAM, tgUser } from '../lib/telegram.js'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 
@@ -42,6 +43,45 @@ function RegisterSheet({ close }) {
   </>
 }
 
+/**
+ * Reaching the login screen inside Telegram means the automatic sign-in on boot did not take:
+ * an invite-only instance, or a launch the server would not accept. Passkeys are a poor answer
+ * there — most in-app WebViews cannot do WebAuthn at all — so this offers the one credential
+ * the person definitely has, plus the invite field that is usually the actual blocker.
+ */
+function TelegramLogin() {
+  const telegramSignIn = useStore(s => s.telegramSignIn)
+  const pullState = useStore(s => s.pullState)
+  const [code, setCode] = useState('')
+  const [inviteOnly, setInviteOnly] = useState(false)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => { api('/api/config').then(c => setInviteOnly(!!c.invite_only)).catch(() => {}) }, [])
+
+  const go = async () => {
+    setBusy(true)
+    const u = await telegramSignIn(code.trim())
+    if (u) { await pullState(); useUI.getState().toast(t('Welcome, {0}', u.name)) }
+    else useUI.getState().toast(inviteOnly && !code.trim() ? t('An invite code is required') : t('Sign-in failed'))
+    setBusy(false)
+  }
+
+  return <>
+    <div className="muted" style={{ marginBottom: 24 }}>
+      {tgUser?.first_name ? t('Signed in to Telegram as {0}.', tgUser.first_name) : t('Opened from Telegram.')}
+    </div>
+    {inviteOnly && <>
+      <input className="input" placeholder={t('Invite code')} maxLength={40} value={code}
+        onChange={e => setCode(e.target.value.toUpperCase())}
+        style={{ letterSpacing: '.14em', fontWeight: 600, textAlign: 'center' }} />
+      <div className="dim small" style={{ margin: '6px 0 14px' }}>{t('This app is invite-only — enter the code you were given.')}</div>
+    </>}
+    <Button variant="primary" icon="person" disabled={busy} onClick={go}>{t('Continue with Telegram')}</Button>
+    <div className="dim small" style={{ marginTop: 22, lineHeight: 1.5 }}>
+      {t('Your Telegram account is the key to this profile. Nothing is shared with Telegram beyond the fact that you opened the app.')}
+    </div>
+  </>
+}
+
 export default function Login() {
   const { setUser, pullState, setGuest } = useStore()
   const signIn = async () => {
@@ -66,6 +106,13 @@ export default function Login() {
       <div className="dim small" style={{ marginTop: 22, lineHeight: 1.6 }}>
         <a href={REPO} target="_blank" rel="noopener">{t('Self-host it in a minute →')}</a>
       </div>
+    </div>
+  )
+
+  if (IN_TELEGRAM) return (
+    <div className="narrow" style={wrap}>
+      {head}
+      <TelegramLogin />
     </div>
   )
 

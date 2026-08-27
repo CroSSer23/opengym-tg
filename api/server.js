@@ -13,6 +13,8 @@ import * as coachConfig from './coach/config.js';
 import * as coachJobs from './coach/jobs.js';
 import { coachRoutes } from './coach/routes.js';
 import { startCadence } from './coach/cadence.js';
+import * as telegram from './telegram/bot.js';
+import { telegramRoutes } from './telegram/routes.js';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
@@ -69,6 +71,39 @@ catch { vapid = webpush.generateVAPIDKeys(); fs.writeFileSync(vapidFile, JSON.st
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || (SECURE ? ORIGIN : 'mailto:admin@localhost');
 webpush.setVapidDetails(VAPID_SUBJECT, vapid.publicKey, vapid.privateKey);
 
+/**
+ * Everything the server ever tells a user, over whichever channels that user has.
+ *
+ * Web push and Telegram are not alternatives to choose between: a profile can have a phone
+ * subscribed to push and a laptop that only ever opens the Mini App, and both want the same
+ * alert. In practice they rarely overlap, because someone who lives in the Mini App never
+ * grants a web-push permission from inside a Telegram WebView. Either channel can be switched
+ * off in Settings and neither one failing stops the other.
+ */
+async function notify(userId, payload) {
+  await Promise.all([sendPush(userId, payload), sendTelegram(userId, payload)]);
+}
+
+async function sendTelegram(userId, payload) {
+  if (!telegram.enabled()) return;
+  const user = db.users.find(u => u.id === userId);
+  if (!user?.tg) return;
+  // Opt-out lives in the profile's synced state, next to the other notification settings,
+  // rather than in db.json — it is the user's preference, not the instance's record of them.
+  if (readState(userId)?.tgNotify === false) return;
+  const r = await telegram.notify(user.tg, payload);
+  // 403 is the user having blocked the bot. There is no undoing that from here, and retrying
+  // every rest timer forever helps nobody, so the link is dropped and the app says "not linked"
+  // next time they look.
+  if (!r.ok && r.code === 403) {
+    console.log('telegram: %s blocked the bot — unlinking', userId);
+    delete user.tg; delete user.tgUsername;
+    saveDb();
+  } else if (!r.ok) {
+    console.error('telegram: notify failed for', userId, '-', r.error);
+  }
+}
+
 async function sendPush(userId, payload) {
   const subs = db.subs.filter(s => s.userId === userId);
   if (!subs.length) return;
@@ -99,7 +134,7 @@ function scheduleRestTimer(userId, sec) {
   if (t) clearTimeout(t);
   restTimers.set(userId, setTimeout(() => {
     restTimers.delete(userId);
-    sendPush(userId, { title: 'Rest over 💪', body: 'Time for your next set.', tag: 'rest-timer' });
+    notify(userId, { title: 'Rest over 💪', body: 'Time for your next set.', tag: 'rest-timer' });
   }, sec * 1000));
 }
 function cancelRestTimer(userId) {
@@ -146,7 +181,7 @@ setInterval(() => {
     console.log('reminder firing', user.id, rid);
     user.lastReminder = now.date;
     saveDb();
-    sendPush(user.id, {
+    notify(user.id, {
       title: routine ? `${routine.emoji || '🏋️'} ${routine.name} today` : 'Workout planned today',
       body: "It's on your plan — let's go 💪",
       tag: 'day-reminder'
@@ -273,7 +308,8 @@ const routes = {
   // the app it was before the feature existed.
   'GET /api/config': async (req, res) => {
     const coach = coachConfig.publicConfig();
-    json(res, 200, { invite_only: INVITE_ONLY, ...(coach ? { coach } : {}) });
+    const tg = telegram.publicConfig();
+    json(res, 200, { invite_only: INVITE_ONLY, ...(coach ? { coach } : {}), ...(tg ? { telegram: tg } : {}) });
   },
 
   'GET /api/me': async (req, res) => {
@@ -435,7 +471,7 @@ const routes = {
   'POST /api/push/test': async (req, res) => {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
-    await sendPush(user.id, { title: 'openGym', body: 'Test notification ✅ — this is what alerts look like.', tag: 'test' });
+    await notify(user.id, { title: 'openGym', body: 'Test notification ✅ — this is what alerts look like.', tag: 'test' });
     json(res, 200, { ok: true });
   },
 
@@ -562,7 +598,14 @@ const routes = {
   // Routes live in coach/routes.js and are handed the helpers above rather than importing
   // them: they are closures over db and SECRET, and passing them in keeps that module free of
   // a cycle. Every one of them is inert while the feature is unconfigured.
-  ...coachRoutes({ json, readBody, readSession, requireAdmin })
+  ...coachRoutes({ json, readBody, readSession, requireAdmin }),
+
+  /* ---------- Telegram ---------- */
+  // Inert unless TELEGRAM_BOT_TOKEN is set; every route answers 503 until then.
+  ...telegramRoutes({
+    json, readBody, readSession, db, saveDb, sessionCookie, isAdmin,
+    inviteOnly: () => INVITE_ONLY
+  })
 };
 
 /* ---------- Coach: boot recovery, notifications, scheduled reviews ---------- */
@@ -574,7 +617,7 @@ coachJobs.recoverOnBoot();
 coachJobs.setProposalHook((uid, pending) => {
   const n = (pending?.changes || []).length;
   if (!n) return;
-  sendPush(uid, {
+  notify(uid, {
     title: 'Your Coach has been reading',
     body: n === 1 ? '1 suggestion after this week' : `${n} suggestions after this week`,
     tag: 'coach-proposal', url: '#/coach'
@@ -592,4 +635,9 @@ http.createServer(async (req, res) => {
     console.error(key, e);
     if (!res.headersSent) json(res, 500, { error: 'server error' });
   }
-}).listen(PORT, () => console.log(`gym-api on :${PORT} (rpID=${RP_ID}, origin=${ORIGIN})`));
+}).listen(PORT, () => {
+  console.log(`gym-api on :${PORT} (rpID=${RP_ID}, origin=${ORIGIN})`);
+  // Only once we are actually serving: the first thing the bot does is hand someone a button
+  // that opens this app, and a getUpdates backlog can arrive the moment polling starts.
+  telegram.start();
+});

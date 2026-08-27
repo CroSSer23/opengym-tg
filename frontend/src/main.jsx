@@ -1,3 +1,7 @@
+// First, and deliberately: inside Telegram the launch parameters arrive in the URL fragment,
+// which is also where HashRouter keeps the route. This module reads them and hands the router
+// a clean hash, so it has to run before anything that touches location.hash.
+import './lib/telegram.js'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'

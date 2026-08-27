@@ -90,6 +90,7 @@ as a home-screen app, passkey sign-in, offline support, sync across your phone a
 - 💪 **Muscle map** — a front-and-back body diagram shaded by how much work each muscle got, over a week, a month or all time. It names the muscles you *haven't* trained in that period, previews what a routine hits while you build it, and shows what you just trained when you finish. Male or female figure, your pick
 - 🔔 **Push notifications** — rest-timer alerts even with the app closed, plus an optional reminder on days you have a workout planned but haven't logged one. Opt in per profile; keys are generated on first run, nothing to configure
 - 🤖 **AI Coach** (optional) — an AI that *designs* your plan and adjusts it from what you actually log. A short intake produces a complete weekly plan you can refine in plain language; on demand or on a schedule it reads your stalls, effort ratings, adherence and body-weight trend and proposes **discrete, explained changes** you accept one by one. Choose the official Claude Agent SDK, the bundled OpenAI Codex CLI with ChatGPT device-code sign-in, or any OpenAI-compatible endpoint of your own (OpenRouter, LiteLLM, vLLM, a LAN Ollama); it is off until the instance owner enables it, needs each profile's separate consent, and never changes anything without your approval — every change-set is snapshotted and revertible. The progression engine still owns your session-to-session weights. **[Full guide →](docs/AI_COACH.md)**
+- ✈️ **Telegram Mini App** (optional) — the whole tracker inside Telegram, opened from your own bot. Your Telegram account *is* the sign-in, so there is nothing to create and nothing to remember; the back arrow and haptics are the platform's own; and rest timers, workout reminders and Coach proposals arrive as messages, which is the only notification channel that actually works on iOS inside a Mini App. Off until you give it a bot token, and a passkey profile can link one so both doors reach the same account. **[Setup →](docs/TELEGRAM.md)**
 - 🔑 **Passkeys, not passwords** — Face ID / Touch ID / fingerprint login; each profile keeps its own data, synced across devices
 - 🛠️ **Admin dashboard** (optional) — for whoever runs the instance: who's training right now, per-user history, disable accounts, and invite-only signup. Off by default, so a fresh instance stays open with no admin
 - 🎨 **Designed, not assembled** — light/dark themes and 8 accent colors saved to your profile, over a hand-drawn icon set instead of emoji, so it looks the same on every phone
@@ -170,6 +171,8 @@ All via `.env` (see `.env.example`):
 | `ADMIN_UIDS`  | User ids that get the admin dashboard (comma-separated) | *(none)*             |
 | `INVITE_ONLY` | Require an invite code to create a profile           | *(off)*                 |
 | `COACH_DISABLED` | Force the AI Coach off, whatever the admin dashboard says | *(unset)*        |
+| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather — turns on the Telegram Mini App | *(off)*        |
+| `TELEGRAM_WEBAPP_URL` | Where the Mini App is served, if not `ORIGIN`         | `ORIGIN`                |
 
 Push notification keys are generated on first run and saved to `./data/vapid.json` — nothing to set.
 
